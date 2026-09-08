@@ -1,0 +1,10 @@
+[package]
+name = "nanai-burn-gna"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+burn = "^0.21"
+nanai-gna-dll-rs = { git = "https://github.com/nanaisisi/nanai-gna-dll-rs.git" }
+thiserror = "^2.0.20"
