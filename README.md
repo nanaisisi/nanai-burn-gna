@@ -63,6 +63,26 @@ nanai-burn-gna = { path = "../nanai-burn-gna" } # または git リポジトリ
 
 ### 2. サンプルコード
 
+#### Burn Tensor / Backend の利用
+`GnaBackend` を指定して Burn の Tensor を初期化・操作できます：
+
+```rust
+use burn::tensor::Tensor;
+use nanai_burn_gna::{GnaBackend, GnaDevice};
+
+fn main() {
+    let device = GnaDevice::default();
+    
+    // Float Tensor
+    let tensor = Tensor::<GnaBackend, 2>::from_data([[1.0f32, 2.0], [3.0, 4.0]], &device);
+    println!("Shape: {:?}", tensor.shape());
+    
+    let data = tensor.into_data();
+    println!("Tensor data: {:?}", data);
+}
+```
+
+#### GNA ハードウェアの低レイヤ操作
 GNA ライブラリを動的ロードし、デバイス情報の取得やメモリ確保を行う例です：
 
 ```rust

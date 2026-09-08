@@ -5,6 +5,11 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-burn = "^0.21"
+burn = "^0.21.0"
+enumset = "^1.1.14"
 nanai-gna-dll-rs = { git = "https://github.com/nanaisisi/nanai-gna-dll-rs.git" }
 thiserror = "^2.0.20"
+
+[lib]
+name = "nanai_gna_dll_rs"
+path = "src/lib.rs"
