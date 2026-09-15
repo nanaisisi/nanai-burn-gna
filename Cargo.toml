@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 burn = "^0.21.0"
 enumset = "^1.1.14"
-nanai-gna-dll-rs = { git = "https://github.com/nanaisisi/nanai-gna-dll-rs.git" }
+nanai-gna-dll-load = { git = "https://github.com/nanaisisi/nanai-gna-dll-load.git" }
 thiserror = "^2.0.20"
 
 [lib]
