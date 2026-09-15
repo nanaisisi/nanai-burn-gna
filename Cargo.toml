@@ -11,5 +11,5 @@ nanai-gna-dll-rs = { git = "https://github.com/nanaisisi/nanai-gna-dll-rs.git" }
 thiserror = "^2.0.20"
 
 [lib]
-name = "nanai_gna_dll_rs"
+name = "nanai_burn_gna"
 path = "src/lib.rs"
