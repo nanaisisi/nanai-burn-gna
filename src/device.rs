@@ -1,8 +1,7 @@
 use burn::tensor::backend::{DeviceId, DeviceOps};
 
 /// Intel GNA device representation for Burn.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
 pub struct GnaDevice {
     /// Device index identifier (typically 0 for the first GNA device)
     pub index: u16,
@@ -15,27 +14,26 @@ impl GnaDevice {
     }
 
     /// Get the count of available GNA hardware devices.
-    pub fn get_count(lib: &nanai_gna_dll_rs::GnaLibrary) -> nanai_gna_dll_rs::Result<u32> {
-        nanai_gna_dll_rs::GnaDevice::get_count(lib)
+    pub fn get_count(lib: &nanai_gna_dll_load::GnaLibrary) -> nanai_gna_dll_load::Result<u32> {
+        nanai_gna_dll_load::GnaDevice::get_count(lib)
     }
 
     /// Query the hardware version of a GNA device.
     pub fn get_version(
-        lib: &nanai_gna_dll_rs::GnaLibrary,
+        lib: &nanai_gna_dll_load::GnaLibrary,
         device_index: u32,
-    ) -> nanai_gna_dll_rs::Result<nanai_gna_dll_rs::Gna2DeviceVersion> {
-        nanai_gna_dll_rs::GnaDevice::get_version(lib, device_index)
+    ) -> nanai_gna_dll_load::Result<nanai_gna_dll_load::Gna2DeviceVersion> {
+        nanai_gna_dll_load::GnaDevice::get_version(lib, device_index)
     }
 
     /// Open a GNA device session.
     pub fn open(
-        lib: &nanai_gna_dll_rs::GnaLibrary,
+        lib: &nanai_gna_dll_load::GnaLibrary,
         device_index: u32,
-    ) -> nanai_gna_dll_rs::Result<nanai_gna_dll_rs::GnaDevice> {
-        nanai_gna_dll_rs::GnaDevice::open(lib, device_index)
+    ) -> nanai_gna_dll_load::Result<nanai_gna_dll_load::GnaDevice> {
+        nanai_gna_dll_load::GnaDevice::open(lib, device_index)
     }
 }
-
 
 impl burn::tensor::backend::Device for GnaDevice {
     fn from_id(device_id: DeviceId) -> Self {

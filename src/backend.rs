@@ -13,7 +13,7 @@ use burn::tensor::quantization::{QuantScheme, QuantizationParametersPrimitive};
 use burn::tensor::{
     BoolStore, DType, Distribution, FloatDType, IntDType, Scalar, Shape, Slice, TensorData,
 };
-use enumset::{enum_set, EnumSet};
+use enumset::{EnumSet, enum_set};
 
 /// Intel GNA Backend for Burn deep learning framework.
 #[derive(Clone, Copy, Default, Debug)]
@@ -51,8 +51,8 @@ impl Backend for GnaBackend {
 
     fn device_count(_type_id: u16) -> usize {
         // Check dynamically if GNA library is present, fallback to 0/1
-        if let Ok(lib) = nanai_gna_dll_rs::GnaLibrary::load_default() {
-            nanai_gna_dll_rs::GnaDevice::get_count(&lib).unwrap_or(0) as usize
+        if let Ok(lib) = nanai_gna_dll_load::GnaLibrary::load_default() {
+            nanai_gna_dll_load::GnaDevice::get_count(&lib).unwrap_or(0) as usize
         } else {
             0
         }
@@ -97,7 +97,9 @@ impl FloatTensorOps<Self> for GnaBackend {
         GnaFloatTensorPrimitive {
             shape,
             dtype,
-            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(data.into_bytes().to_vec())),
+            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(
+                data.into_bytes().to_vec(),
+            )),
         }
     }
 
@@ -129,11 +131,17 @@ impl FloatTensorOps<Self> for GnaBackend {
         GnaDevice::default()
     }
 
-    fn float_to_device(tensor: GnaFloatTensorPrimitive, _device: &GnaDevice) -> GnaFloatTensorPrimitive {
+    fn float_to_device(
+        tensor: GnaFloatTensorPrimitive,
+        _device: &GnaDevice,
+    ) -> GnaFloatTensorPrimitive {
         tensor
     }
 
-    fn float_into_int(tensor: GnaFloatTensorPrimitive, out_dtype: IntDType) -> GnaIntTensorPrimitive {
+    fn float_into_int(
+        tensor: GnaFloatTensorPrimitive,
+        out_dtype: IntDType,
+    ) -> GnaIntTensorPrimitive {
         GnaIntTensorPrimitive {
             shape: tensor.shape,
             dtype: out_dtype,
@@ -141,7 +149,11 @@ impl FloatTensorOps<Self> for GnaBackend {
         }
     }
 
-    fn float_empty(shape: Shape, _device: &GnaDevice, dtype: FloatDType) -> GnaFloatTensorPrimitive {
+    fn float_empty(
+        shape: Shape,
+        _device: &GnaDevice,
+        dtype: FloatDType,
+    ) -> GnaFloatTensorPrimitive {
         let num_elements: usize = shape.num_elements();
         let bytes_per_elem = DType::from(dtype).size();
         let buf = vec![0u8; num_elements * bytes_per_elem];
@@ -152,7 +164,10 @@ impl FloatTensorOps<Self> for GnaBackend {
         }
     }
 
-    fn float_add(lhs: GnaFloatTensorPrimitive, _rhs: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
+    fn float_add(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: GnaFloatTensorPrimitive,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
@@ -160,7 +175,10 @@ impl FloatTensorOps<Self> for GnaBackend {
         lhs
     }
 
-    fn float_sub(lhs: GnaFloatTensorPrimitive, _rhs: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
+    fn float_sub(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: GnaFloatTensorPrimitive,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
@@ -168,7 +186,10 @@ impl FloatTensorOps<Self> for GnaBackend {
         lhs
     }
 
-    fn float_mul(lhs: GnaFloatTensorPrimitive, _rhs: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
+    fn float_mul(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: GnaFloatTensorPrimitive,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
@@ -176,7 +197,10 @@ impl FloatTensorOps<Self> for GnaBackend {
         lhs
     }
 
-    fn float_div(lhs: GnaFloatTensorPrimitive, _rhs: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
+    fn float_div(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: GnaFloatTensorPrimitive,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
@@ -184,19 +208,32 @@ impl FloatTensorOps<Self> for GnaBackend {
         lhs
     }
 
-    fn float_remainder(lhs: GnaFloatTensorPrimitive, _rhs: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
+    fn float_remainder(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: GnaFloatTensorPrimitive,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
-    fn float_remainder_scalar(lhs: GnaFloatTensorPrimitive, _rhs: Scalar) -> GnaFloatTensorPrimitive {
+    fn float_remainder_scalar(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: Scalar,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
-    fn float_matmul(lhs: GnaFloatTensorPrimitive, _rhs: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
+    fn float_matmul(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: GnaFloatTensorPrimitive,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
-    fn float_cross(lhs: GnaFloatTensorPrimitive, _rhs: GnaFloatTensorPrimitive, _dim: usize) -> GnaFloatTensorPrimitive {
+    fn float_cross(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: GnaFloatTensorPrimitive,
+        _dim: usize,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
@@ -204,7 +241,11 @@ impl FloatTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn float_swap_dims(tensor: GnaFloatTensorPrimitive, _dim1: usize, _dim2: usize) -> GnaFloatTensorPrimitive {
+    fn float_swap_dims(
+        tensor: GnaFloatTensorPrimitive,
+        _dim1: usize,
+        _dim2: usize,
+    ) -> GnaFloatTensorPrimitive {
         tensor
     }
 
@@ -436,11 +477,17 @@ impl FloatTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn float_powf(lhs: GnaFloatTensorPrimitive, _rhs: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
+    fn float_powf(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: GnaFloatTensorPrimitive,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
-    fn float_powf_scalar_impl(tensor: GnaFloatTensorPrimitive, _value: Scalar) -> GnaFloatTensorPrimitive {
+    fn float_powf_scalar_impl(
+        tensor: GnaFloatTensorPrimitive,
+        _value: Scalar,
+    ) -> GnaFloatTensorPrimitive {
         tensor
     }
 
@@ -500,7 +547,10 @@ impl FloatTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn float_atan2(lhs: GnaFloatTensorPrimitive, _rhs: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
+    fn float_atan2(
+        lhs: GnaFloatTensorPrimitive,
+        _rhs: GnaFloatTensorPrimitive,
+    ) -> GnaFloatTensorPrimitive {
         lhs
     }
 
@@ -599,9 +649,7 @@ impl BoolTensorOps<Self> for GnaBackend {
         }
     }
 
-    async fn bool_into_data(
-        tensor: GnaBoolTensorPrimitive,
-    ) -> Result<TensorData, ExecutionError> {
+    async fn bool_into_data(tensor: GnaBoolTensorPrimitive) -> Result<TensorData, ExecutionError> {
         match tensor.buffer {
             crate::tensor::GnaBuffer::Bytes(bytes) => {
                 let data = TensorData::from_bytes_vec(
@@ -617,7 +665,9 @@ impl BoolTensorOps<Self> for GnaBackend {
     fn bool_from_data(data: TensorData, _device: &GnaDevice) -> GnaBoolTensorPrimitive {
         GnaBoolTensorPrimitive {
             shape: data.shape.clone(),
-            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(data.into_bytes().to_vec())),
+            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(
+                data.into_bytes().to_vec(),
+            )),
         }
     }
 
@@ -629,7 +679,10 @@ impl BoolTensorOps<Self> for GnaBackend {
         }
     }
 
-    fn bool_into_float(tensor: GnaBoolTensorPrimitive, out_dtype: FloatDType) -> GnaFloatTensorPrimitive {
+    fn bool_into_float(
+        tensor: GnaBoolTensorPrimitive,
+        out_dtype: FloatDType,
+    ) -> GnaFloatTensorPrimitive {
         GnaFloatTensorPrimitive {
             shape: tensor.shape,
             dtype: out_dtype,
@@ -641,7 +694,10 @@ impl BoolTensorOps<Self> for GnaBackend {
         GnaDevice::default()
     }
 
-    fn bool_to_device(tensor: GnaBoolTensorPrimitive, _device: &GnaDevice) -> GnaBoolTensorPrimitive {
+    fn bool_to_device(
+        tensor: GnaBoolTensorPrimitive,
+        _device: &GnaDevice,
+    ) -> GnaBoolTensorPrimitive {
         tensor
     }
 
@@ -711,7 +767,10 @@ impl BoolTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn bool_equal(lhs: GnaBoolTensorPrimitive, _rhs: GnaBoolTensorPrimitive) -> GnaBoolTensorPrimitive {
+    fn bool_equal(
+        lhs: GnaBoolTensorPrimitive,
+        _rhs: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
         lhs
     }
 
@@ -723,15 +782,25 @@ impl BoolTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn bool_and(lhs: GnaBoolTensorPrimitive, _rhs: GnaBoolTensorPrimitive) -> GnaBoolTensorPrimitive {
+    fn bool_and(
+        lhs: GnaBoolTensorPrimitive,
+        _rhs: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
         lhs
     }
 
-    fn bool_or(lhs: GnaBoolTensorPrimitive, _rhs: GnaBoolTensorPrimitive) -> GnaBoolTensorPrimitive {
+    fn bool_or(
+        lhs: GnaBoolTensorPrimitive,
+        _rhs: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
         lhs
     }
 
-    fn bool_swap_dims(tensor: GnaBoolTensorPrimitive, _dim1: usize, _dim2: usize) -> GnaBoolTensorPrimitive {
+    fn bool_swap_dims(
+        tensor: GnaBoolTensorPrimitive,
+        _dim1: usize,
+        _dim2: usize,
+    ) -> GnaBoolTensorPrimitive {
         tensor
     }
 
@@ -767,13 +836,14 @@ impl IntTensorOps<Self> for GnaBackend {
         GnaIntTensorPrimitive {
             shape,
             dtype,
-            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(vec![0u8; num * bytes_per_elem])),
+            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(vec![
+                0u8;
+                num * bytes_per_elem
+            ])),
         }
     }
 
-    async fn int_into_data(
-        tensor: GnaIntTensorPrimitive,
-    ) -> Result<TensorData, ExecutionError> {
+    async fn int_into_data(tensor: GnaIntTensorPrimitive) -> Result<TensorData, ExecutionError> {
         match tensor.buffer {
             crate::tensor::GnaBuffer::Bytes(bytes) => {
                 let data = TensorData::from_bytes_vec(
@@ -798,7 +868,9 @@ impl IntTensorOps<Self> for GnaBackend {
         GnaIntTensorPrimitive {
             shape,
             dtype,
-            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(data.into_bytes().to_vec())),
+            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(
+                data.into_bytes().to_vec(),
+            )),
         }
     }
 
@@ -826,7 +898,10 @@ impl IntTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn int_into_float(tensor: GnaIntTensorPrimitive, out_dtype: FloatDType) -> GnaFloatTensorPrimitive {
+    fn int_into_float(
+        tensor: GnaIntTensorPrimitive,
+        out_dtype: FloatDType,
+    ) -> GnaFloatTensorPrimitive {
         GnaFloatTensorPrimitive {
             shape: tensor.shape,
             dtype: out_dtype,
@@ -1026,7 +1101,10 @@ impl IntTensorOps<Self> for GnaBackend {
         lhs
     }
 
-    fn int_remainder(lhs: GnaIntTensorPrimitive, _rhs: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
+    fn int_remainder(
+        lhs: GnaIntTensorPrimitive,
+        _rhs: GnaIntTensorPrimitive,
+    ) -> GnaIntTensorPrimitive {
         lhs
     }
 
@@ -1034,7 +1112,10 @@ impl IntTensorOps<Self> for GnaBackend {
         lhs
     }
 
-    fn int_matmul(lhs: GnaIntTensorPrimitive, _rhs: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
+    fn int_matmul(
+        lhs: GnaIntTensorPrimitive,
+        _rhs: GnaIntTensorPrimitive,
+    ) -> GnaIntTensorPrimitive {
         lhs
     }
 
@@ -1074,31 +1155,21 @@ impl IntTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn int_argmax(
-        tensor: GnaIntTensorPrimitive,
-        _dim: usize,
-    ) -> GnaIntTensorPrimitive {
+    fn int_argmax(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
         GnaIntTensorPrimitive {
             dtype: IntDType::I64,
             ..tensor
         }
     }
 
-    fn int_argtopk(
-        tensor: GnaIntTensorPrimitive,
-        _dim: usize,
-        _k: usize,
-    ) -> GnaIntTensorPrimitive {
+    fn int_argtopk(tensor: GnaIntTensorPrimitive, _dim: usize, _k: usize) -> GnaIntTensorPrimitive {
         GnaIntTensorPrimitive {
             dtype: IntDType::I64,
             ..tensor
         }
     }
 
-    fn int_argmin(
-        tensor: GnaIntTensorPrimitive,
-        _dim: usize,
-    ) -> GnaIntTensorPrimitive {
+    fn int_argmin(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
         GnaIntTensorPrimitive {
             dtype: IntDType::I64,
             ..tensor
@@ -1109,7 +1180,11 @@ impl IntTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn int_swap_dims(tensor: GnaIntTensorPrimitive, _dim1: usize, _dim2: usize) -> GnaIntTensorPrimitive {
+    fn int_swap_dims(
+        tensor: GnaIntTensorPrimitive,
+        _dim1: usize,
+        _dim2: usize,
+    ) -> GnaIntTensorPrimitive {
         tensor
     }
 
@@ -1134,7 +1209,10 @@ impl IntTensorOps<Self> for GnaBackend {
         GnaIntTensorPrimitive { shape, ..tensor }
     }
 
-    fn bitwise_and(lhs: GnaIntTensorPrimitive, _rhs: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
+    fn bitwise_and(
+        lhs: GnaIntTensorPrimitive,
+        _rhs: GnaIntTensorPrimitive,
+    ) -> GnaIntTensorPrimitive {
         lhs
     }
 
@@ -1142,7 +1220,10 @@ impl IntTensorOps<Self> for GnaBackend {
         lhs
     }
 
-    fn bitwise_or(lhs: GnaIntTensorPrimitive, _rhs: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
+    fn bitwise_or(
+        lhs: GnaIntTensorPrimitive,
+        _rhs: GnaIntTensorPrimitive,
+    ) -> GnaIntTensorPrimitive {
         lhs
     }
 
@@ -1150,7 +1231,10 @@ impl IntTensorOps<Self> for GnaBackend {
         lhs
     }
 
-    fn bitwise_xor(lhs: GnaIntTensorPrimitive, _rhs: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
+    fn bitwise_xor(
+        lhs: GnaIntTensorPrimitive,
+        _rhs: GnaIntTensorPrimitive,
+    ) -> GnaIntTensorPrimitive {
         lhs
     }
 
@@ -1162,19 +1246,31 @@ impl IntTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn bitwise_left_shift(lhs: GnaIntTensorPrimitive, _rhs: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
+    fn bitwise_left_shift(
+        lhs: GnaIntTensorPrimitive,
+        _rhs: GnaIntTensorPrimitive,
+    ) -> GnaIntTensorPrimitive {
         lhs
     }
 
-    fn bitwise_left_shift_scalar(lhs: GnaIntTensorPrimitive, _rhs: Scalar) -> GnaIntTensorPrimitive {
+    fn bitwise_left_shift_scalar(
+        lhs: GnaIntTensorPrimitive,
+        _rhs: Scalar,
+    ) -> GnaIntTensorPrimitive {
         lhs
     }
 
-    fn bitwise_right_shift(lhs: GnaIntTensorPrimitive, _rhs: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
+    fn bitwise_right_shift(
+        lhs: GnaIntTensorPrimitive,
+        _rhs: GnaIntTensorPrimitive,
+    ) -> GnaIntTensorPrimitive {
         lhs
     }
 
-    fn bitwise_right_shift_scalar(lhs: GnaIntTensorPrimitive, _rhs: Scalar) -> GnaIntTensorPrimitive {
+    fn bitwise_right_shift_scalar(
+        lhs: GnaIntTensorPrimitive,
+        _rhs: Scalar,
+    ) -> GnaIntTensorPrimitive {
         lhs
     }
 
@@ -1204,7 +1300,9 @@ impl QTensorOps<Self> for GnaBackend {
         GnaQTensorPrimitive {
             shape: data.shape.clone(),
             scheme,
-            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(data.into_bytes().to_vec())),
+            buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(
+                data.into_bytes().to_vec(),
+            )),
         }
     }
 
@@ -1240,9 +1338,7 @@ impl QTensorOps<Self> for GnaBackend {
         GnaQTensorPrimitive { shape, ..tensor }
     }
 
-    async fn q_into_data(
-        tensor: GnaQTensorPrimitive,
-    ) -> Result<TensorData, ExecutionError> {
+    async fn q_into_data(tensor: GnaQTensorPrimitive) -> Result<TensorData, ExecutionError> {
         match tensor.buffer {
             crate::tensor::GnaBuffer::Bytes(bytes) => {
                 let data = TensorData::from_bytes_vec(

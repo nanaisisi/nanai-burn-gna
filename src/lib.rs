@@ -4,7 +4,7 @@ pub mod tensor;
 
 pub use backend::GnaBackend;
 pub use device::GnaDevice;
-pub use nanai_gna_dll_rs::*;
+pub use nanai_gna_dll_load::*;
 pub use tensor::{
     GnaBoolTensorPrimitive, GnaBuffer, GnaFloatTensorPrimitive, GnaIntTensorPrimitive,
     GnaQTensorPrimitive,
@@ -13,8 +13,8 @@ pub use tensor::{
 #[cfg(test)]
 mod tests {
     use super::*;
-    use burn::tensor::backend::Backend;
     use burn::tensor::Tensor;
+    use burn::tensor::backend::Backend;
 
     #[test]
     fn load_gna_library() {
@@ -46,7 +46,8 @@ mod tests {
     #[test]
     fn gna_int_tensor_creation() {
         let device = GnaDevice::default();
-        let tensor = Tensor::<GnaBackend, 1, burn::tensor::Int>::from_data([10i32, 20, 30], &device);
+        let tensor =
+            Tensor::<GnaBackend, 1, burn::tensor::Int>::from_data([10i32, 20, 30], &device);
         let shape = tensor.shape();
         assert_eq!(shape.dims(), [3]);
 
@@ -55,4 +56,3 @@ mod tests {
         assert_eq!(slice, &[10, 20, 30]);
     }
 }
-
