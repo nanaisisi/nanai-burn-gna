@@ -7,13 +7,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let device_index = 0;
     let version = GnaDevice::get_version(&lib, device_index)?;
-    println!("Device {} version: 0x{:x} ({})", device_index, version.0, version.as_str());
+    println!(
+        "Device {} version: 0x{:x} ({})",
+        device_index,
+        version.0,
+        version.as_str()
+    );
 
     let device = GnaDevice::open(&lib, device_index)?;
     println!("Opened device {}", device.index());
 
     let buffer = device.allocate_buffer(1024)?;
-    println!("Allocated {} bytes at {:p}", buffer.len(), buffer.as_raw_ptr());
+    println!(
+        "Allocated {} bytes at {:p}",
+        buffer.len(),
+        buffer.as_raw_ptr()
+    );
 
     drop(buffer);
     println!("Freed memory");
@@ -23,4 +32,3 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
