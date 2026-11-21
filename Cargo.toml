@@ -5,10 +5,10 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-burn = "^0.21.0"
-enumset = "^1.1.14"
+burn = "^0.22.1"
+enumset = "^1.1.15"
 nanai-gna-dll-load = { git = "https://github.com/nanaisisi/nanai-gna-dll-load.git" }
-thiserror = "^2.0.20"
+thiserror = "^2.0.21"
 
 [lib]
 name = "nanai_burn_gna"
