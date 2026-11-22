@@ -61,12 +61,12 @@ pub(super) fn int_into_float(
 }
 
 pub(super) fn int_random(
-    _shape: Shape,
-    _distribution: Distribution,
+    shape: Shape,
+    distribution: Distribution,
     _device: &GnaDevice,
-    _dtype: IntDType,
+    dtype: IntDType,
 ) -> GnaIntTensorPrimitive {
-    unimplemented!("int_random is not supported on GNA hardware")
+    crate::backend::gna_exec::extra::execute_int_random(shape, distribution, dtype)
 }
 
 pub(super) fn int_expand(tensor: GnaIntTensorPrimitive, shape: Shape) -> GnaIntTensorPrimitive {

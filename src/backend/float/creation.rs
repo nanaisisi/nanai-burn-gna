@@ -21,12 +21,12 @@ pub(super) fn float_from_data(data: TensorData, _device: &GnaDevice) -> GnaFloat
 }
 
 pub(super) fn float_random(
-    _shape: Shape,
-    _distribution: Distribution,
+    shape: Shape,
+    distribution: Distribution,
     _device: &GnaDevice,
-    _dtype: FloatDType,
+    dtype: FloatDType,
 ) -> GnaFloatTensorPrimitive {
-    unimplemented!("float_random is not supported on GNA hardware (inference-only accelerator)")
+    crate::backend::gna_exec::extra::execute_float_random(shape, distribution, dtype)
 }
 
 pub(super) async fn float_into_data(

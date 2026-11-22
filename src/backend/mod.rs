@@ -3,9 +3,7 @@ use crate::tensor::{
     GnaBoolTensorPrimitive, GnaFloatTensorPrimitive, GnaIntTensorPrimitive, GnaQTensorPrimitive,
 };
 use burn_backend::distributed::DistributedOps;
-use burn_backend::ops::{
-    ActivationOps, TransactionOps, TransactionPrimitive, TransactionPrimitiveData,
-};
+use burn_backend::ops::{ActivationOps, TransactionOps};
 use burn_backend::{
     Backend, BackendTypes, DType, DTypeUsage, DTypeUsageSet, ExecutionError, GraphUnsupported,
 };
@@ -48,8 +46,8 @@ impl Backend for GnaBackend {
         format!("gna (device #{})", device.index())
     }
 
-    fn seed(_device: &Self::Device, _seed: u64) {
-        // GNA accelerator is deterministic inference device; seed is no-op
+    fn seed(_device: &Self::Device, seed: u64) {
+        gna_exec::extra::set_rng_seed(seed);
     }
 
     fn dtype_usage(_device: &Self::Device, dtype: DType) -> DTypeUsageSet {
@@ -93,12 +91,4 @@ impl ActivationOps<Self> for GnaBackend {}
 // ---------------------------------------------------------------------------
 // TransactionOps
 // ---------------------------------------------------------------------------
-impl TransactionOps<Self> for GnaBackend {
-    async fn tr_execute(
-        _transaction: TransactionPrimitive<Self>,
-    ) -> Result<TransactionPrimitiveData, ExecutionError> {
-        Err(ExecutionError::WithContext {
-            reason: "TransactionOps not supported on GNA backend".into(),
-        })
-    }
-}
+impl TransactionOps<Self> for GnaBackend {}

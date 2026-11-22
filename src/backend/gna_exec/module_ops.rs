@@ -356,11 +356,92 @@ pub fn execute_float_conv3d(
 
 pub fn execute_float_conv_transpose3d(
     x: GnaFloatTensorPrimitive,
-    _weight: GnaFloatTensorPrimitive,
-    _bias: Option<GnaFloatTensorPrimitive>,
-    _options: ConvTransposeOptions<3>,
+    weight: GnaFloatTensorPrimitive,
+    bias: Option<GnaFloatTensorPrimitive>,
+    options: ConvTransposeOptions<3>,
 ) -> GnaFloatTensorPrimitive {
-    x
+    let xd: &[usize] = &x.shape();
+    let wd: &[usize] = &weight.shape();
+    let (batch, in_c, in_d, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3], xd[4]);
+    let (out_c_per_g, kd, kh, kw) = (wd[1], wd[2], wd[3], wd[4]);
+    let groups = options.groups;
+    let out_c = out_c_per_g * groups;
+    let [sd, sh, sw] = options.stride;
+    let [pd, ph, pw] = options.padding;
+    let [pod, poh, pow] = options.padding_out;
+    let [dd, dh, dw] = options.dilation;
+
+    let out_d = (in_d - 1) * sd + dd * (kd - 1) + 1 + pod - 2 * pd;
+    let out_h = (in_h - 1) * sh + dh * (kh - 1) + 1 + poh - 2 * ph;
+    let out_w = (in_w - 1) * sw + dw * (kw - 1) + 1 + pow - 2 * pw;
+
+    let dtype = x.dtype();
+    let xv = decode_floats(x.buffer().as_slice(), dtype);
+    let wv = decode_floats(weight.buffer().as_slice(), weight.dtype());
+    let bv = bias.map(|b| decode_floats(b.buffer().as_slice(), b.dtype()));
+    let mut out = vec![0.0f32; batch * out_c * out_d * out_h * out_w];
+    let in_c_per_g = in_c / groups;
+
+    for b in 0..batch {
+        for g in 0..groups {
+            for ic in 0..in_c_per_g {
+                let ic_abs = g * in_c_per_g + ic;
+                for id in 0..in_d {
+                    for ih in 0..in_h {
+                        for iw in 0..in_w {
+                            let x_val =
+                                xv[(((b * in_c + ic_abs) * in_d + id) * in_h + ih) * in_w + iw];
+                            for oc in 0..out_c_per_g {
+                                let oc_abs = g * out_c_per_g + oc;
+                                for kz in 0..kd {
+                                    for ky in 0..kh {
+                                        for kx in 0..kw {
+                                            let oz = (id * sd + kz * dd) as isize - pd as isize;
+                                            let oy = (ih * sh + ky * dh) as isize - ph as isize;
+                                            let ox = (iw * sw + kx * dw) as isize - pw as isize;
+                                            if oz >= 0
+                                                && oz < out_d as isize
+                                                && oy >= 0
+                                                && oy < out_h as isize
+                                                && ox >= 0
+                                                && ox < out_w as isize
+                                            {
+                                                let w_val =
+                                                    wv[(((ic_abs * out_c_per_g + oc) * kd + kz)
+                                                        * kh
+                                                        + ky)
+                                                        * kw
+                                                        + kx];
+                                                let oi = (((b * out_c + oc_abs) * out_d
+                                                    + oz as usize)
+                                                    * out_h
+                                                    + oy as usize)
+                                                    * out_w
+                                                    + ox as usize;
+                                                out[oi] += x_val * w_val;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(ref b_vals) = bv {
+            for (oc, &b_val) in b_vals.iter().enumerate() {
+                for dhw in 0..(out_d * out_h * out_w) {
+                    out[(b * out_c + oc) * out_d * out_h * out_w + dhw] += b_val;
+                }
+            }
+        }
+    }
+    GnaFloatTensorPrimitive::new(
+        Shape::from([batch, out_c, out_d, out_h, out_w]),
+        dtype,
+        GnaBuffer::from_bytes(encode_floats(&out, dtype)),
+    )
 }
 
 pub fn execute_float_adaptive_avg_pool3d(
