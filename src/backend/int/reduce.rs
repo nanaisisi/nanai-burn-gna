@@ -1,5 +1,8 @@
+use crate::backend::gna_exec::extra::{
+    CumMode, execute_int_argmax_argmin, execute_int_argtopk, execute_int_cum, execute_int_prod,
+    execute_int_prod_dim,
+};
 use crate::tensor::int::GnaIntTensorPrimitive;
-use burn_backend::IntDType;
 
 pub(super) fn int_sum(tensor: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
     crate::backend::gna_exec::ops::execute_int_sum(tensor)
@@ -10,45 +13,45 @@ pub(super) fn int_sum_dim(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTe
 }
 
 pub(super) fn int_prod(tensor: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
-    tensor
+    execute_int_prod(tensor)
 }
 
-pub(super) fn int_prod_dim(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_prod_dim(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
+    execute_int_prod_dim(tensor, dim)
 }
 
 pub(super) fn int_mean_dim(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
     crate::backend::gna_exec::ops::execute_int_sum_dim(tensor, dim, true)
 }
 
-pub(super) fn int_cumsum(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_cumsum(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
+    execute_int_cum(tensor, dim, CumMode::Sum)
 }
 
-pub(super) fn int_cumprod(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_cumprod(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
+    execute_int_cum(tensor, dim, CumMode::Prod)
 }
 
-pub(super) fn int_cummin(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_cummin(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
+    execute_int_cum(tensor, dim, CumMode::Min)
 }
 
-pub(super) fn int_cummax(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_cummax(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
+    execute_int_cum(tensor, dim, CumMode::Max)
 }
 
-pub(super) fn int_argmax(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor.with_dtype(IntDType::I32)
+pub(super) fn int_argmax(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
+    execute_int_argmax_argmin(tensor, dim, true)
 }
 
 pub(super) fn int_argtopk(
     tensor: GnaIntTensorPrimitive,
-    _dim: usize,
-    _k: usize,
+    dim: usize,
+    k: usize,
 ) -> GnaIntTensorPrimitive {
-    tensor.with_dtype(IntDType::I32)
+    execute_int_argtopk(tensor, dim, k)
 }
 
-pub(super) fn int_argmin(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor.with_dtype(IntDType::I32)
+pub(super) fn int_argmin(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
+    execute_int_argmax_argmin(tensor, dim, false)
 }

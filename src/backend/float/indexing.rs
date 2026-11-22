@@ -178,7 +178,14 @@ pub(super) fn float_mask_fill(
 
 pub(super) fn float_unfold(
     tensor: GnaFloatTensorPrimitive,
-    _params: UnfoldParams,
+    params: UnfoldParams,
 ) -> GnaFloatTensorPrimitive {
-    tensor
+    let elem_size = DType::from(tensor.dtype()).size();
+    let (out_shape, out_bytes) = layout::unfold_bytes(
+        tensor.buffer().as_slice(),
+        &tensor.shape(),
+        params,
+        elem_size,
+    );
+    GnaFloatTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }

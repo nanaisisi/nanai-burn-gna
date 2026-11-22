@@ -168,7 +168,14 @@ pub(super) fn int_flip(tensor: GnaIntTensorPrimitive, axes: &[usize]) -> GnaIntT
 
 pub(super) fn int_unfold(
     tensor: GnaIntTensorPrimitive,
-    _params: UnfoldParams,
+    params: UnfoldParams,
 ) -> GnaIntTensorPrimitive {
-    tensor
+    let elem_size = DType::from(tensor.dtype()).size();
+    let (out_shape, out_bytes) = layout::unfold_bytes(
+        tensor.buffer().as_slice(),
+        &tensor.shape(),
+        params,
+        elem_size,
+    );
+    GnaIntTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }

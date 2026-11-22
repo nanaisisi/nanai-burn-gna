@@ -18,7 +18,6 @@ mod int;
 mod module;
 mod quantized;
 
-#[allow(dead_code)]
 pub(crate) struct UnfoldParams {
     pub dim: usize,
     pub size: usize,

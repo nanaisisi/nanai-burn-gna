@@ -36,27 +36,27 @@ pub(super) fn int_mul_scalar(lhs: GnaIntTensorPrimitive, rhs: Scalar) -> GnaIntT
 
 pub(super) fn int_div(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::map_int_binary(lhs, rhs, i64::wrapping_div)
 }
 
-pub(super) fn int_div_scalar(lhs: GnaIntTensorPrimitive, _rhs: Scalar) -> GnaIntTensorPrimitive {
-    lhs
+pub(super) fn int_div_scalar(lhs: GnaIntTensorPrimitive, rhs: Scalar) -> GnaIntTensorPrimitive {
+    crate::backend::gna_exec::extra::map_int_scalar(lhs, rhs, i64::wrapping_div)
 }
 
 pub(super) fn int_remainder(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::map_int_binary(lhs, rhs, i64::wrapping_rem)
 }
 
 pub(super) fn int_remainder_scalar(
     lhs: GnaIntTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
 ) -> GnaIntTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::map_int_scalar(lhs, rhs, i64::wrapping_rem)
 }
 
 pub(super) fn int_matmul(

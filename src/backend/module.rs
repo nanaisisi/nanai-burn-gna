@@ -2,11 +2,11 @@ use super::GnaBackend;
 use crate::tensor::bool::GnaBoolTensorPrimitive;
 use crate::tensor::float::GnaFloatTensorPrimitive;
 use crate::tensor::int::GnaIntTensorPrimitive;
+use burn_backend::IntDType;
 use burn_backend::ops::{
     AttentionModuleOptions, ConvOptions, ConvTransposeOptions, DeformConv2dBackward,
     DeformConvOptions, InterpolateOptions, MaxPool2dBackward, MaxPool2dWithIndices, ModuleOps,
 };
-use burn_backend::{IntDType, TensorMetadata};
 
 // ---------------------------------------------------------------------------
 // ModuleOps
@@ -73,13 +73,20 @@ impl ModuleOps<Self> for GnaBackend {
 
     fn avg_pool2d(
         x: GnaFloatTensorPrimitive,
-        _kernel_size: [usize; 2],
-        _stride: [usize; 2],
-        _padding: [usize; 2],
-        _count_include_pad: bool,
-        _ceil_mode: bool,
+        kernel_size: [usize; 2],
+        stride: [usize; 2],
+        padding: [usize; 2],
+        count_include_pad: bool,
+        ceil_mode: bool,
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::extra::execute_float_avg_pool2d(
+            x,
+            kernel_size,
+            stride,
+            padding,
+            count_include_pad,
+            ceil_mode,
+        )
     }
 
     fn avg_pool2d_backward(
@@ -96,9 +103,9 @@ impl ModuleOps<Self> for GnaBackend {
 
     fn adaptive_avg_pool2d(
         x: GnaFloatTensorPrimitive,
-        _output_size: [usize; 2],
+        output_size: [usize; 2],
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::extra::execute_float_adaptive_avg_pool2d(x, output_size)
     }
 
     fn adaptive_avg_pool2d_backward(
@@ -124,26 +131,43 @@ impl ModuleOps<Self> for GnaBackend {
 
     fn max_pool2d(
         x: GnaFloatTensorPrimitive,
-        _kernel_size: [usize; 2],
-        _stride: [usize; 2],
-        _padding: [usize; 2],
-        _dilation: [usize; 2],
-        _ceil_mode: bool,
+        kernel_size: [usize; 2],
+        stride: [usize; 2],
+        padding: [usize; 2],
+        dilation: [usize; 2],
+        ceil_mode: bool,
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::extra::execute_float_max_pool2d_with_indices(
+            x,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            ceil_mode,
+            IntDType::I32,
+        )
+        .0
     }
 
     fn max_pool2d_with_indices(
         x: GnaFloatTensorPrimitive,
-        _kernel_size: [usize; 2],
-        _stride: [usize; 2],
-        _padding: [usize; 2],
-        _dilation: [usize; 2],
-        _ceil_mode: bool,
+        kernel_size: [usize; 2],
+        stride: [usize; 2],
+        padding: [usize; 2],
+        dilation: [usize; 2],
+        ceil_mode: bool,
         indices_dtype: IntDType,
     ) -> MaxPool2dWithIndices<Self> {
-        let indices = GnaIntTensorPrimitive::new(x.shape(), indices_dtype, x.buffer().clone());
-        MaxPool2dWithIndices::new(x, indices)
+        let (out, indices) = crate::backend::gna_exec::extra::execute_float_max_pool2d_with_indices(
+            x,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            ceil_mode,
+            indices_dtype,
+        );
+        MaxPool2dWithIndices::new(out, indices)
     }
 
     fn max_pool2d_with_indices_backward(

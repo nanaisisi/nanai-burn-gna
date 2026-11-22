@@ -82,5 +82,11 @@ pub(super) fn int_expand(tensor: GnaIntTensorPrimitive, shape: Shape) -> GnaIntT
 }
 
 pub(super) fn int_cast(tensor: GnaIntTensorPrimitive, dtype: IntDType) -> GnaIntTensorPrimitive {
-    tensor.with_dtype(dtype)
+    use burn_backend::TensorMetadata;
+    if tensor.dtype() == dtype {
+        return tensor;
+    }
+    let vals = crate::backend::gna_exec::decode_ints(tensor.buffer().as_slice(), tensor.dtype());
+    let bytes = crate::backend::gna_exec::encode_ints(&vals, dtype);
+    GnaIntTensorPrimitive::new(tensor.shape(), dtype, GnaBuffer::from_bytes(bytes))
 }

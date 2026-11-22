@@ -411,3 +411,29 @@ pub fn convert_int_to_float(
         GnaBuffer::from_bytes(encode_floats(&vals, out_dtype)),
     )
 }
+
+pub fn unfold_bytes(
+    bytes: &[u8],
+    dims: &[usize],
+    params: crate::backend::UnfoldParams,
+    elem_size: usize,
+) -> (Shape, Vec<u8>) {
+    let windows = (dims[params.dim].saturating_sub(params.size)) / params.step + 1;
+    let mut out_dims = dims.to_vec();
+    out_dims[params.dim] = windows;
+    out_dims.push(params.size);
+
+    let total: usize = out_dims.iter().product();
+    let in_strides = compute_strides(dims);
+    let mut out = vec![0u8; total * elem_size];
+
+    for out_idx in 0..total {
+        let out_coords = linear_to_coords(out_idx, &out_dims);
+        let mut in_coords = out_coords[..dims.len()].to_vec();
+        in_coords[params.dim] = out_coords[params.dim] * params.step + out_coords[dims.len()];
+        let in_idx = coords_to_linear(&in_coords, &in_strides);
+        out[out_idx * elem_size..(out_idx + 1) * elem_size]
+            .copy_from_slice(&bytes[in_idx * elem_size..(in_idx + 1) * elem_size]);
+    }
+    (Shape::from(out_dims), out)
+}

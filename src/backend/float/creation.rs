@@ -69,7 +69,13 @@ pub(super) fn float_cast(
     tensor: GnaFloatTensorPrimitive,
     dtype: FloatDType,
 ) -> GnaFloatTensorPrimitive {
-    tensor.with_dtype(dtype)
+    use burn_backend::TensorMetadata;
+    if tensor.dtype() == dtype {
+        return tensor;
+    }
+    let vals = crate::backend::gna_exec::decode_floats(tensor.buffer().as_slice(), tensor.dtype());
+    let bytes = crate::backend::gna_exec::encode_floats(&vals, dtype);
+    GnaFloatTensorPrimitive::new(tensor.shape(), dtype, GnaBuffer::from_bytes(bytes))
 }
 
 pub(super) fn float_expand(

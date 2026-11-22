@@ -45,30 +45,30 @@ pub(super) fn float_mul_scalar(
 
 pub(super) fn float_div(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: GnaFloatTensorPrimitive,
+    rhs: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::map_float_binary(lhs, rhs, |a, b| a / b)
 }
 
 pub(super) fn float_div_scalar(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::map_float_scalar(lhs, rhs, |a, b| a / b)
 }
 
 pub(super) fn float_remainder(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: GnaFloatTensorPrimitive,
+    rhs: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::map_float_binary(lhs, rhs, |a, b| a % b)
 }
 
 pub(super) fn float_remainder_scalar(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::map_float_scalar(lhs, rhs, |a, b| a % b)
 }
 
 pub(super) fn float_matmul(
@@ -87,26 +87,26 @@ pub(super) fn float_cross(
 }
 
 pub(super) fn float_recip(tensor: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
-    tensor
+    crate::backend::gna_exec::extra::map_float_unary(tensor, |a| 1.0 / a)
 }
 
 pub(super) fn float_powf(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: GnaFloatTensorPrimitive,
+    rhs: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::map_float_binary(lhs, rhs, f32::powf)
 }
 
 pub(super) fn float_powf_scalar_impl(
     tensor: GnaFloatTensorPrimitive,
-    _value: Scalar,
+    value: Scalar,
 ) -> GnaFloatTensorPrimitive {
-    tensor
+    crate::backend::gna_exec::extra::map_float_scalar(tensor, value, f32::powf)
 }
 
 pub(super) fn float_atan2(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: GnaFloatTensorPrimitive,
+    rhs: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::map_float_binary(lhs, rhs, f32::atan2)
 }
