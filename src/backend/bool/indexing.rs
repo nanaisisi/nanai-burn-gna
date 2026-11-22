@@ -9,8 +9,10 @@ pub(super) fn bool_slice(
     tensor: GnaBoolTensorPrimitive,
     slices: &[Slice],
 ) -> GnaBoolTensorPrimitive {
-    let (shape, bytes) =
-        layout::slice_bytes(tensor.buffer().as_slice(), &tensor.shape(), slices, 1);
+    let (shape, bytes) = layout::slice_bytes(
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
+        slices,
+    );
     GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
 }
 
@@ -20,11 +22,9 @@ pub(super) fn bool_slice_assign(
     value: GnaBoolTensorPrimitive,
 ) -> GnaBoolTensorPrimitive {
     let bytes = layout::slice_assign_bytes(
-        tensor.buffer().as_slice(),
-        &tensor.shape(),
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
         slices,
         value.buffer().as_slice(),
-        1,
     );
     GnaBoolTensorPrimitive::new(tensor.shape(), GnaBuffer::from_bytes(bytes))
 }
@@ -35,10 +35,11 @@ pub(super) fn bool_mask_where(
     value: GnaBoolTensorPrimitive,
 ) -> GnaBoolTensorPrimitive {
     let bytes = layout::mask_where_bytes(
-        tensor.buffer().as_slice(),
-        mask.buffer().as_slice(),
+        layout::slice::MaskedBytes {
+            bytes: tensor.buffer().as_slice(),
+            mask: mask.buffer().as_slice(),
+        },
         value.buffer().as_slice(),
-        1,
     );
     GnaBoolTensorPrimitive::new(tensor.shape(), GnaBuffer::from_bytes(bytes))
 }
@@ -50,10 +51,11 @@ pub(super) fn bool_mask_fill(
 ) -> GnaBoolTensorPrimitive {
     let fill = [u8::from(value.elem::<bool>())];
     let bytes = layout::mask_fill_bytes(
-        tensor.buffer().as_slice(),
-        mask.buffer().as_slice(),
+        layout::slice::MaskedBytes {
+            bytes: tensor.buffer().as_slice(),
+            mask: mask.buffer().as_slice(),
+        },
         &fill,
-        1,
     );
     GnaBoolTensorPrimitive::new(tensor.shape(), GnaBuffer::from_bytes(bytes))
 }
@@ -66,11 +68,11 @@ pub(super) fn bool_gather(
     let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
     let (shape, bytes) = layout::gather_bytes(
         dim,
-        tensor.buffer().as_slice(),
-        &tensor.shape(),
-        &idx_vals,
-        &indices.shape(),
-        1,
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
+        layout::slice::GatherIndices {
+            vals: &idx_vals,
+            dims: &indices.shape(),
+        },
     );
     GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
 }
@@ -91,11 +93,9 @@ pub(super) fn bool_select(
 ) -> GnaBoolTensorPrimitive {
     let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
     let (shape, bytes) = layout::select_bytes(
-        tensor.buffer().as_slice(),
-        &tensor.shape(),
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
         dim,
         &idx_vals,
-        1,
     );
     GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
 }
@@ -114,8 +114,11 @@ pub(super) fn bool_swap_dims(
     dim1: usize,
     dim2: usize,
 ) -> GnaBoolTensorPrimitive {
-    let (shape, bytes) =
-        layout::swap_dims_bytes(tensor.buffer().as_slice(), &tensor.shape(), dim1, dim2, 1);
+    let (shape, bytes) = layout::swap_dims_bytes(
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
+        dim1,
+        dim2,
+    );
     GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
 }
 
@@ -123,27 +126,26 @@ pub(super) fn bool_permute(
     tensor: GnaBoolTensorPrimitive,
     axes: &[usize],
 ) -> GnaBoolTensorPrimitive {
-    let (shape, bytes) =
-        layout::permute_bytes(tensor.buffer().as_slice(), &tensor.shape(), axes, 1);
+    let (shape, bytes) = layout::permute_bytes(
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
+        axes,
+    );
     GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
 }
 
 pub(super) fn bool_flip(tensor: GnaBoolTensorPrimitive, axes: &[usize]) -> GnaBoolTensorPrimitive {
-    let bytes = layout::flip_bytes(tensor.buffer().as_slice(), &tensor.shape(), axes, 1);
+    let bytes = layout::flip_bytes(
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
+        axes,
+    );
     GnaBoolTensorPrimitive::new(tensor.shape(), GnaBuffer::from_bytes(bytes))
 }
 
 pub(super) fn bool_unfold(
     tensor: GnaBoolTensorPrimitive,
-    dim: usize,
-    size: usize,
-    step: usize,
+    params: UnfoldParams,
 ) -> GnaBoolTensorPrimitive {
-    let (shape, bytes) = layout::unfold_bytes(
-        tensor.buffer().as_slice(),
-        &tensor.shape(),
-        UnfoldParams::new(dim, size, step),
-        1,
-    );
+    let (shape, bytes) =
+        layout::unfold_bytes(tensor.buffer().as_slice(), &tensor.shape(), params, 1);
     GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
 }

@@ -1,25 +1,43 @@
 use burn_backend::{IntDType, Shape, TensorMetadata};
 
-use crate::backend::gna_exec::{decode_floats, encode_floats, encode_ints, gna_matmul_i16};
+use crate::backend::gna_exec::{
+    GnaMatmulDims, decode_floats, encode_floats, encode_ints, gna_matmul_i16,
+};
 use crate::tensor::buffer::GnaBuffer;
 use crate::tensor::float::GnaFloatTensorPrimitive;
 use crate::tensor::int::GnaIntTensorPrimitive;
 
+/// Parameters for 2D average pooling.
+pub struct AvgPool2dParams {
+    pub kernel_size: [usize; 2],
+    pub stride: [usize; 2],
+    pub padding: [usize; 2],
+    pub count_include_pad: bool,
+    pub ceil_mode: bool,
+}
+
+/// Parameters for 2D max pooling.
+pub struct MaxPool2dParams {
+    pub kernel_size: [usize; 2],
+    pub stride: [usize; 2],
+    pub padding: [usize; 2],
+    pub dilation: [usize; 2],
+    pub ceil_mode: bool,
+}
+
 /// Execute 2D average pooling on Intel GNA 3.0 hardware (`gna_matmul_i16` window summation).
 pub fn execute_float_avg_pool2d(
     x: GnaFloatTensorPrimitive,
-    kernel_size: [usize; 2],
-    stride: [usize; 2],
-    padding: [usize; 2],
-    count_include_pad: bool,
-    ceil_mode: bool,
+    params: AvgPool2dParams,
 ) -> GnaFloatTensorPrimitive {
     let x_shape = x.shape();
     let xd: &[usize] = &x_shape;
     let (batch, channels, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
-    let [kh, kw] = kernel_size;
-    let [sh, sw] = stride;
-    let [ph, pw] = padding;
+    let [kh, kw] = params.kernel_size;
+    let [sh, sw] = params.stride;
+    let [ph, pw] = params.padding;
+    let count_include_pad = params.count_include_pad;
+    let ceil_mode = params.ceil_mode;
 
     let out_h = if ceil_mode {
         (in_h + 2 * ph - kh).div_ceil(sh) + 1
@@ -54,17 +72,14 @@ pub fn execute_float_avg_pool2d(
                         for kx in 0..kw {
                             let iy = (oh * sh + ky) as isize - ph as isize;
                             let ix = (ow * sw + kx) as isize - pw as isize;
-                            let v = if iy >= 0
-                                && iy < in_h as isize
-                                && ix >= 0
-                                && ix < in_w as isize
-                            {
-                                valid += 1;
-                                vals[((b * channels + c) * in_h + iy as usize) * in_w
-                                    + ix as usize]
-                            } else {
-                                0.0
-                            };
+                            let v =
+                                if iy >= 0 && iy < in_h as isize && ix >= 0 && ix < in_w as isize {
+                                    valid += 1;
+                                    vals[((b * channels + c) * in_h + iy as usize) * in_w
+                                        + ix as usize]
+                                } else {
+                                    0.0
+                                };
                             col_i16[row * k_win + ky * kw + kx] =
                                 (v / scale).round().clamp(-q_max, q_max) as i16;
                         }
@@ -80,7 +95,7 @@ pub fn execute_float_avg_pool2d(
     }
 
     let ones = vec![1i16; k_win];
-    let sums = gna_matmul_i16(&col_i16, &ones, m, k_win, 1, 0)
+    let sums = gna_matmul_i16(&col_i16, &ones, GnaMatmulDims::new(m, k_win, 1, 0))
         .expect("GNA hardware avg_pool2d execution failed");
     let out: Vec<f32> = sums
         .into_iter()
@@ -137,20 +152,17 @@ pub fn execute_float_adaptive_avg_pool2d(
 
 pub fn execute_float_max_pool2d_with_indices(
     x: GnaFloatTensorPrimitive,
-    kernel_size: [usize; 2],
-    stride: [usize; 2],
-    padding: [usize; 2],
-    dilation: [usize; 2],
-    ceil_mode: bool,
+    params: MaxPool2dParams,
     indices_dtype: IntDType,
 ) -> (GnaFloatTensorPrimitive, GnaIntTensorPrimitive) {
     let x_shape = x.shape();
     let xd: &[usize] = &x_shape;
     let (batch, channels, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
-    let [kh, kw] = kernel_size;
-    let [sh, sw] = stride;
-    let [ph, pw] = padding;
-    let [dh, dw] = dilation;
+    let [kh, kw] = params.kernel_size;
+    let [sh, sw] = params.stride;
+    let [ph, pw] = params.padding;
+    let [dh, dw] = params.dilation;
+    let ceil_mode = params.ceil_mode;
 
     let out_h = if ceil_mode {
         (in_h + 2 * ph - dh * (kh - 1) - 1).div_ceil(sh) + 1

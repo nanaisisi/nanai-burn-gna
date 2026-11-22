@@ -33,16 +33,43 @@ const fn align_up(value: usize, align: usize) -> usize {
     value.div_ceil(align) * align
 }
 
+/// Matrix dimensions and target device index for GNA hardware affine/matmul execution.
+#[derive(Clone, Copy, Debug)]
+pub struct GnaMatmulDims {
+    pub m: usize,
+    pub k: usize,
+    pub n: usize,
+    pub device_index: u32,
+}
+
+impl GnaMatmulDims {
+    pub const fn new(m: usize, k: usize, n: usize, device_index: u32) -> Self {
+        Self {
+            m,
+            k,
+            n,
+            device_index,
+        }
+    }
+}
+
+/// Operand slices for GNA hardware affine/matmul execution.
+#[derive(Clone, Copy)]
+pub struct GnaAffineOperands<'a> {
+    pub lhs: &'a [i16],
+    pub rhs: &'a [i16],
+    pub bias: Option<&'a [i32]>,
+}
+
 /// Execute `lhs [m, k] * rhs [k, n] (+ bias [n])` strictly on Intel GNA hardware.
-pub fn gna_affine_i16(
-    lhs: &[i16],
-    rhs: &[i16],
-    bias: Option<&[i32]>,
-    m: usize,
-    k: usize,
-    n: usize,
-    device_index: u32,
-) -> Result<Vec<i32>> {
+pub fn gna_affine_i16(ops: GnaAffineOperands<'_>, dims: GnaMatmulDims) -> Result<Vec<i32>> {
+    let GnaAffineOperands { lhs, rhs, bias } = ops;
+    let GnaMatmulDims {
+        m,
+        k,
+        n,
+        device_index,
+    } = dims;
     if m == 0 || k == 0 || n == 0 {
         return Ok(vec![0i32; m * n]);
     }
@@ -152,13 +179,13 @@ pub fn gna_affine_i16(
 }
 
 /// Execute `lhs [m, k] * rhs [k, n]` strictly on Intel GNA hardware.
-pub fn gna_matmul_i16(
-    lhs: &[i16],
-    rhs: &[i16],
-    m: usize,
-    k: usize,
-    n: usize,
-    device_index: u32,
-) -> Result<Vec<i32>> {
-    gna_affine_i16(lhs, rhs, None, m, k, n, device_index)
+pub fn gna_matmul_i16(lhs: &[i16], rhs: &[i16], dims: GnaMatmulDims) -> Result<Vec<i32>> {
+    gna_affine_i16(
+        GnaAffineOperands {
+            lhs,
+            rhs,
+            bias: None,
+        },
+        dims,
+    )
 }

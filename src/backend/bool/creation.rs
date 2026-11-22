@@ -95,6 +95,9 @@ pub(super) fn bool_reshape(tensor: GnaBoolTensorPrimitive, shape: Shape) -> GnaB
 }
 
 pub(super) fn bool_expand(tensor: GnaBoolTensorPrimitive, shape: Shape) -> GnaBoolTensorPrimitive {
-    let bytes = layout::expand_bytes(tensor.buffer().as_slice(), &tensor.shape(), &shape, 1);
+    let bytes = layout::expand_bytes(
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
+        &shape,
+    );
     GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
 }

@@ -15,11 +15,13 @@ pub(super) fn avg_pool2d(
 ) -> GnaFloatTensorPrimitive {
     extra::execute_float_avg_pool2d(
         x,
-        kernel_size,
-        stride,
-        padding,
-        count_include_pad,
-        ceil_mode,
+        extra::pool::AvgPool2dParams {
+            kernel_size,
+            stride,
+            padding,
+            count_include_pad,
+            ceil_mode,
+        },
     )
 }
 
@@ -81,11 +83,13 @@ pub(super) fn max_pool2d(
 ) -> GnaFloatTensorPrimitive {
     extra::execute_float_max_pool2d_with_indices(
         x,
-        kernel_size,
-        stride,
-        padding,
-        dilation,
-        ceil_mode,
+        extra::pool::MaxPool2dParams {
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            ceil_mode,
+        },
         IntDType::I32,
     )
     .0
@@ -102,11 +106,13 @@ pub(super) fn max_pool2d_with_indices(
 ) -> MaxPool2dWithIndices<GnaBackend> {
     let (out, indices) = extra::execute_float_max_pool2d_with_indices(
         x,
-        kernel_size,
-        stride,
-        padding,
-        dilation,
-        ceil_mode,
+        extra::pool::MaxPool2dParams {
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            ceil_mode,
+        },
         indices_dtype,
     );
     MaxPool2dWithIndices::new(out, indices)

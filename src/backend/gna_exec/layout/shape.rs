@@ -1,5 +1,23 @@
 use burn_backend::Shape;
 
+/// Borrowed view of a raw byte tensor with its shape and element size.
+#[derive(Clone, Copy)]
+pub struct ByteTensorView<'a> {
+    pub bytes: &'a [u8],
+    pub dims: &'a [usize],
+    pub elem_size: usize,
+}
+
+impl<'a> ByteTensorView<'a> {
+    pub const fn new(bytes: &'a [u8], dims: &'a [usize], elem_size: usize) -> Self {
+        Self {
+            bytes,
+            dims,
+            elem_size,
+        }
+    }
+}
+
 pub(super) fn compute_strides(dims: &[usize]) -> Vec<usize> {
     let mut strides = vec![1; dims.len()];
     for i in (0..dims.len().saturating_sub(1)).rev() {
@@ -26,12 +44,12 @@ pub(super) fn coords_to_linear(coords: &[usize], strides: &[usize]) -> usize {
         .sum()
 }
 
-pub fn permute_bytes(
-    bytes: &[u8],
-    dims: &[usize],
-    axes: &[usize],
-    elem_size: usize,
-) -> (Shape, Vec<u8>) {
+pub fn permute_bytes(src: ByteTensorView<'_>, axes: &[usize]) -> (Shape, Vec<u8>) {
+    let ByteTensorView {
+        bytes,
+        dims,
+        elem_size,
+    } = src;
     let out_dims: Vec<usize> = axes.iter().map(|&a| dims[a]).collect();
     let total: usize = out_dims.iter().product();
     let in_strides = compute_strides(dims);
@@ -51,19 +69,18 @@ pub fn permute_bytes(
     (Shape::from(out_dims), out)
 }
 
-pub fn swap_dims_bytes(
-    bytes: &[u8],
-    dims: &[usize],
-    dim1: usize,
-    dim2: usize,
-    elem_size: usize,
-) -> (Shape, Vec<u8>) {
-    let mut axes: Vec<usize> = (0..dims.len()).collect();
+pub fn swap_dims_bytes(src: ByteTensorView<'_>, dim1: usize, dim2: usize) -> (Shape, Vec<u8>) {
+    let mut axes: Vec<usize> = (0..src.dims.len()).collect();
     axes.swap(dim1, dim2);
-    permute_bytes(bytes, dims, &axes, elem_size)
+    permute_bytes(src, &axes)
 }
 
-pub fn flip_bytes(bytes: &[u8], dims: &[usize], axes: &[usize], elem_size: usize) -> Vec<u8> {
+pub fn flip_bytes(src: ByteTensorView<'_>, axes: &[usize]) -> Vec<u8> {
+    let ByteTensorView {
+        bytes,
+        dims,
+        elem_size,
+    } = src;
     let total: usize = dims.iter().product();
     let strides = compute_strides(dims);
     let mut out = vec![0u8; total * elem_size];
@@ -82,12 +99,12 @@ pub fn flip_bytes(bytes: &[u8], dims: &[usize], axes: &[usize], elem_size: usize
     out
 }
 
-pub fn expand_bytes(
-    bytes: &[u8],
-    in_dims: &[usize],
-    out_shape: &Shape,
-    elem_size: usize,
-) -> Vec<u8> {
+pub fn expand_bytes(src: ByteTensorView<'_>, out_shape: &Shape) -> Vec<u8> {
+    let ByteTensorView {
+        bytes,
+        dims: in_dims,
+        elem_size,
+    } = src;
     let out_dims: &[usize] = out_shape;
     let total: usize = out_dims.iter().product();
     let in_strides = compute_strides(in_dims);
@@ -131,22 +148,19 @@ pub fn broadcast_shape(a: &[usize], b: &[usize]) -> Shape {
 }
 
 pub fn broadcast_pair_bytes(
-    a: &[u8],
-    a_dims: &[usize],
-    b: &[u8],
-    b_dims: &[usize],
-    elem_size: usize,
+    a: ByteTensorView<'_>,
+    b: ByteTensorView<'_>,
 ) -> (Shape, Vec<u8>, Vec<u8>) {
-    let out_shape = broadcast_shape(a_dims, b_dims);
-    let a_out = if a_dims == out_shape.as_slice() {
-        a.to_vec()
+    let out_shape = broadcast_shape(a.dims, b.dims);
+    let a_out = if a.dims == out_shape.as_slice() {
+        a.bytes.to_vec()
     } else {
-        expand_bytes(a, a_dims, &out_shape, elem_size)
+        expand_bytes(a, &out_shape)
     };
-    let b_out = if b_dims == out_shape.as_slice() {
-        b.to_vec()
+    let b_out = if b.dims == out_shape.as_slice() {
+        b.bytes.to_vec()
     } else {
-        expand_bytes(b, b_dims, &out_shape, elem_size)
+        expand_bytes(b, &out_shape)
     };
     (out_shape, a_out, b_out)
 }

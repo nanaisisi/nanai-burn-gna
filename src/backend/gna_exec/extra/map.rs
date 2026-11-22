@@ -29,11 +29,8 @@ pub fn map_float_binary(
     let dtype = lhs.dtype();
     let elem_size = burn_backend::DType::from(dtype).size();
     let (shape, l_bytes, r_bytes) = layout::broadcast_pair_bytes(
-        lhs.buffer().as_slice(),
-        &lhs.shape(),
-        rhs.buffer().as_slice(),
-        &rhs.shape(),
-        elem_size,
+        layout::shape::ByteTensorView::new(lhs.buffer().as_slice(), &lhs.shape(), elem_size),
+        layout::shape::ByteTensorView::new(rhs.buffer().as_slice(), &rhs.shape(), elem_size),
     );
     let l = decode_floats(&l_bytes, dtype);
     let r = decode_floats(&r_bytes, rhs.dtype());
@@ -78,11 +75,8 @@ pub fn map_int_binary(
     let dtype = lhs.dtype();
     let elem_size = burn_backend::DType::from(dtype).size();
     let (shape, l_bytes, r_bytes) = layout::broadcast_pair_bytes(
-        lhs.buffer().as_slice(),
-        &lhs.shape(),
-        rhs.buffer().as_slice(),
-        &rhs.shape(),
-        elem_size,
+        layout::shape::ByteTensorView::new(lhs.buffer().as_slice(), &lhs.shape(), elem_size),
+        layout::shape::ByteTensorView::new(rhs.buffer().as_slice(), &rhs.shape(), elem_size),
     );
     let l = decode_ints(&l_bytes, dtype);
     let r = decode_ints(&r_bytes, rhs.dtype());

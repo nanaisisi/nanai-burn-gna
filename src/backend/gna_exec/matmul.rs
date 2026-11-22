@@ -1,7 +1,7 @@
 use burn_backend::{Shape, TensorMetadata};
 
 use crate::backend::gna_exec::codec::{decode_floats, decode_ints, encode_floats, encode_ints};
-use crate::backend::gna_exec::gna_matmul_i16;
+use crate::backend::gna_exec::{GnaMatmulDims, gna_matmul_i16};
 use crate::tensor::buffer::GnaBuffer;
 use crate::tensor::float::GnaFloatTensorPrimitive;
 use crate::tensor::int::GnaIntTensorPrimitive;
@@ -57,7 +57,7 @@ pub fn execute_int_matmul(
             .collect::<Result<Vec<_>>>()
             .expect("GNA hardware int_matmul weight out of Int16 range");
 
-        let gna_out = gna_matmul_i16(&l_i16, &r_i16, m, k, n, 0)
+        let gna_out = gna_matmul_i16(&l_i16, &r_i16, GnaMatmulDims::new(m, k, n, 0))
             .expect("GNA hardware int_matmul execution failed");
         out_vals.extend(gna_out.into_iter().map(|v| v as i64));
     }
@@ -125,7 +125,7 @@ pub fn execute_float_matmul(
             .map(|&v| (v / scale_r).round().clamp(-q_max, q_max) as i16)
             .collect();
 
-        let gna_out = gna_matmul_i16(&l_i16, &r_i16, m, k, n, 0)
+        let gna_out = gna_matmul_i16(&l_i16, &r_i16, GnaMatmulDims::new(m, k, n, 0))
             .expect("GNA hardware float_matmul execution failed");
         let combined_scale = scale_l * scale_r;
         out_vals.extend(gna_out.into_iter().map(|v| v as f32 * combined_scale));

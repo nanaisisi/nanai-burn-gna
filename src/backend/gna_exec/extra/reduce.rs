@@ -185,7 +185,11 @@ pub fn execute_int_cum(
             }
         }
     }
-    GnaIntTensorPrimitive::new(shape, dtype, GnaBuffer::from_bytes(encode_ints(&out, dtype)))
+    GnaIntTensorPrimitive::new(
+        shape,
+        dtype,
+        GnaBuffer::from_bytes(encode_ints(&out, dtype)),
+    )
 }
 
 pub fn execute_float_cum(

@@ -2,7 +2,8 @@ use burn_backend::ops::ConvOptions;
 use burn_backend::{Scalar, Shape, TensorMetadata};
 
 use super::{
-    decode_floats, decode_ints, encode_floats, encode_ints, gna_affine_i16, gna_matmul_i16,
+    GnaAffineOperands, GnaMatmulDims, decode_floats, decode_ints, encode_floats, encode_ints,
+    gna_affine_i16, gna_matmul_i16,
 };
 use crate::tensor::buffer::GnaBuffer;
 use crate::tensor::float::GnaFloatTensorPrimitive;
@@ -41,7 +42,7 @@ fn gna_add_sub_i16(lhs: &[i16], rhs: &[i16], sign: i16) -> Vec<i32> {
         weights[(2 * j) * 32 + j] = 1;
         weights[(2 * j + 1) * 32 + j] = sign;
     }
-    let mut out = gna_matmul_i16(&packed, &weights, m, 64, 32, 0)
+    let mut out = gna_matmul_i16(&packed, &weights, GnaMatmulDims::new(m, 64, 32, 0))
         .expect("GNA hardware add/sub execution failed");
     out.truncate(total);
     out
@@ -61,8 +62,15 @@ fn gna_add_scalar_i16(lhs: &[i16], scalar_bias: i32) -> Vec<i32> {
         identity[i * 64 + i] = 1;
     }
     let bias = vec![scalar_bias; 64];
-    let mut out = gna_affine_i16(&packed, &identity, Some(&bias), m, 64, 64, 0)
-        .expect("GNA hardware add_scalar execution failed");
+    let mut out = gna_affine_i16(
+        GnaAffineOperands {
+            lhs: &packed,
+            rhs: &identity,
+            bias: Some(&bias),
+        },
+        GnaMatmulDims::new(m, 64, 64, 0),
+    )
+    .expect("GNA hardware add_scalar execution failed");
     out.truncate(total);
     out
 }
@@ -80,7 +88,7 @@ fn gna_mul_scalar_i16(lhs: &[i16], scalar: i16) -> Vec<i32> {
     for i in 0..64 {
         diag[i * 64 + i] = scalar;
     }
-    let mut out = gna_matmul_i16(&packed, &diag, m, 64, 64, 0)
+    let mut out = gna_matmul_i16(&packed, &diag, GnaMatmulDims::new(m, 64, 64, 0))
         .expect("GNA hardware mul_scalar execution failed");
     out.truncate(total);
     out
@@ -97,8 +105,8 @@ fn gna_mul_i16(lhs: &[i16], rhs: &[i16]) -> Vec<i32> {
         for i in 0..len {
             diag[i * 64 + i] = rhs[(offset + i) % rhs.len()];
         }
-        let res =
-            gna_matmul_i16(&input, &diag, 1, 64, 64, 0).expect("GNA hardware mul execution failed");
+        let res = gna_matmul_i16(&input, &diag, GnaMatmulDims::new(1, 64, 64, 0))
+            .expect("GNA hardware mul execution failed");
         out.extend_from_slice(&res[..len]);
     }
     out
@@ -112,8 +120,8 @@ fn gna_sum_i16(values: &[i16]) -> i32 {
     let mut packed = vec![0i16; m * 64];
     packed[..values.len()].copy_from_slice(values);
     let ones = vec![1i16; 64];
-    let partials =
-        gna_matmul_i16(&packed, &ones, m, 64, 1, 0).expect("GNA hardware sum execution failed");
+    let partials = gna_matmul_i16(&packed, &ones, GnaMatmulDims::new(m, 64, 1, 0))
+        .expect("GNA hardware sum execution failed");
     partials.into_iter().sum()
 }
 
@@ -215,11 +223,8 @@ pub fn execute_float_add_sub(
     let dtype = lhs.dtype();
     let elem_size = burn_backend::DType::from(dtype).size();
     let (shape, l_bytes, r_bytes) = super::layout::broadcast_pair_bytes(
-        lhs.buffer().as_slice(),
-        &lhs.shape(),
-        rhs.buffer().as_slice(),
-        &rhs.shape(),
-        elem_size,
+        super::layout::shape::ByteTensorView::new(lhs.buffer().as_slice(), &lhs.shape(), elem_size),
+        super::layout::shape::ByteTensorView::new(rhs.buffer().as_slice(), &rhs.shape(), elem_size),
     );
     let l = decode_floats(&l_bytes, dtype);
     let r = decode_floats(&r_bytes, rhs.dtype());
@@ -270,11 +275,8 @@ pub fn execute_float_mul(
     let dtype = lhs.dtype();
     let elem_size = burn_backend::DType::from(dtype).size();
     let (shape, l_bytes, r_bytes) = super::layout::broadcast_pair_bytes(
-        lhs.buffer().as_slice(),
-        &lhs.shape(),
-        rhs.buffer().as_slice(),
-        &rhs.shape(),
-        elem_size,
+        super::layout::shape::ByteTensorView::new(lhs.buffer().as_slice(), &lhs.shape(), elem_size),
+        super::layout::shape::ByteTensorView::new(rhs.buffer().as_slice(), &rhs.shape(), elem_size),
     );
     let l = decode_floats(&l_bytes, dtype);
     let r = decode_floats(&r_bytes, rhs.dtype());
@@ -524,8 +526,15 @@ pub fn execute_float_conv2d(
                 .collect::<Vec<_>>()
         });
 
-        let gna_out = gna_affine_i16(&col_i16, &w_i16, b_i32.as_deref(), m, k_col, out_c_per_g, 0)
-            .expect("GNA hardware conv2d execution failed");
+        let gna_out = gna_affine_i16(
+            GnaAffineOperands {
+                lhs: &col_i16,
+                rhs: &w_i16,
+                bias: b_i32.as_deref(),
+            },
+            GnaMatmulDims::new(m, k_col, out_c_per_g, 0),
+        )
+        .expect("GNA hardware conv2d execution failed");
 
         for b in 0..batch {
             for oh in 0..out_h {

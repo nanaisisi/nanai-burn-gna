@@ -38,7 +38,11 @@ pub fn execute_float_attention(
     let scale = options.scale.unwrap_or_else(|| 1.0 / (d_k as f64).sqrt()) as f32;
 
     // Transpose key [B, H_kv, S_k, D] -> [B, H_kv, D, S_k]
-    let (k_t_shape, k_t_bytes) = layout::swap_dims_bytes(key.buffer().as_slice(), kd, 2, 3, 4);
+    let (k_t_shape, k_t_bytes) = layout::swap_dims_bytes(
+        layout::shape::ByteTensorView::new(key.buffer().as_slice(), kd, 4),
+        2,
+        3,
+    );
     let key_t =
         GnaFloatTensorPrimitive::new(k_t_shape, key.dtype(), GnaBuffer::from_bytes(k_t_bytes));
 
@@ -590,14 +594,31 @@ pub fn transform_q_bytes(tensor: GnaQTensorPrimitive, op: QLayoutOp<'_>) -> GnaQ
     let raw_i8: Vec<u8> = q_vals.into_iter().map(|v| v as u8).collect();
     let (out_shape, out_raw) = match op {
         QLayoutOp::Expand(s) => {
-            let b = layout::expand_bytes(&raw_i8, &shape, &s, 1);
+            let b =
+                layout::expand_bytes(layout::shape::ByteTensorView::new(&raw_i8, &shape, 1), &s);
             (s, b)
         }
-        QLayoutOp::SwapDims(d1, d2) => layout::swap_dims_bytes(&raw_i8, &shape, d1, d2, 1),
-        QLayoutOp::Permute(axes) => layout::permute_bytes(&raw_i8, &shape, axes, 1),
-        QLayoutOp::Flip(axes) => (shape.clone(), layout::flip_bytes(&raw_i8, &shape, axes, 1)),
-        QLayoutOp::Select(dim, idx) => layout::select_bytes(&raw_i8, &shape, dim, idx, 1),
-        QLayoutOp::Slice(slices) => layout::slice_bytes(&raw_i8, &shape, slices, 1),
+        QLayoutOp::SwapDims(d1, d2) => layout::swap_dims_bytes(
+            layout::shape::ByteTensorView::new(&raw_i8, &shape, 1),
+            d1,
+            d2,
+        ),
+        QLayoutOp::Permute(axes) => {
+            layout::permute_bytes(layout::shape::ByteTensorView::new(&raw_i8, &shape, 1), axes)
+        }
+        QLayoutOp::Flip(axes) => (
+            shape.clone(),
+            layout::flip_bytes(layout::shape::ByteTensorView::new(&raw_i8, &shape, 1), axes),
+        ),
+        QLayoutOp::Select(dim, idx) => layout::select_bytes(
+            layout::shape::ByteTensorView::new(&raw_i8, &shape, 1),
+            dim,
+            idx,
+        ),
+        QLayoutOp::Slice(slices) => layout::slice_bytes(
+            layout::shape::ByteTensorView::new(&raw_i8, &shape, 1),
+            slices,
+        ),
     };
     let out_i8: Vec<i8> = out_raw.into_iter().map(|b| b as i8).collect();
     let qb_out = QuantizedBytes::new(

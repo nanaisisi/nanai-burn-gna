@@ -169,6 +169,6 @@ impl BoolTensorOps<Self> for GnaBackend {
         size: usize,
         step: usize,
     ) -> GnaBoolTensorPrimitive {
-        indexing::bool_unfold(tensor, dim, size, step)
+        indexing::bool_unfold(tensor, crate::backend::UnfoldParams::new(dim, size, step))
     }
 }

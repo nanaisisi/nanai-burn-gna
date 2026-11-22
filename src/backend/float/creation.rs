@@ -85,10 +85,12 @@ pub(super) fn float_expand(
     use burn_backend::TensorMetadata;
     let elem_size = DType::from(tensor.dtype()).size();
     let out_bytes = crate::backend::gna_exec::layout::expand_bytes(
-        tensor.buffer().as_slice(),
-        &tensor.shape(),
+        crate::backend::gna_exec::layout::shape::ByteTensorView::new(
+            tensor.buffer().as_slice(),
+            &tensor.shape(),
+            elem_size,
+        ),
         &shape,
-        elem_size,
     );
     GnaFloatTensorPrimitive::new(shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }

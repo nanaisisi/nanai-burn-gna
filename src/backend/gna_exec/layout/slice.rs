@@ -1,6 +1,6 @@
 use burn_backend::{Shape, Slice, TensorMetadata};
 
-use super::shape::{compute_strides, coords_to_linear, linear_to_coords};
+use super::shape::{ByteTensorView, compute_strides, coords_to_linear, linear_to_coords};
 use crate::backend::gna_exec::{decode_floats, decode_ints, encode_floats, encode_ints};
 use crate::tensor::bool::GnaBoolTensorPrimitive;
 use crate::tensor::buffer::GnaBuffer;
@@ -20,12 +20,22 @@ fn slice_indices_for_dim(slice: &Slice, dim_size: usize) -> Vec<usize> {
     }
 }
 
-pub fn slice_bytes(
-    bytes: &[u8],
-    dims: &[usize],
-    slices: &[Slice],
-    elem_size: usize,
-) -> (Shape, Vec<u8>) {
+pub struct MaskedBytes<'a> {
+    pub bytes: &'a [u8],
+    pub mask: &'a [u8],
+}
+
+pub struct GatherIndices<'a> {
+    pub vals: &'a [i64],
+    pub dims: &'a [usize],
+}
+
+pub fn slice_bytes(src: ByteTensorView<'_>, slices: &[Slice]) -> (Shape, Vec<u8>) {
+    let ByteTensorView {
+        bytes,
+        dims,
+        elem_size,
+    } = src;
     let dim_indices: Vec<Vec<usize>> = dims
         .iter()
         .enumerate()
@@ -53,13 +63,12 @@ pub fn slice_bytes(
     (Shape::from(out_dims), out)
 }
 
-pub fn slice_assign_bytes(
-    bytes: &[u8],
-    dims: &[usize],
-    slices: &[Slice],
-    val_bytes: &[u8],
-    elem_size: usize,
-) -> Vec<u8> {
+pub fn slice_assign_bytes(dst: ByteTensorView<'_>, slices: &[Slice], val_bytes: &[u8]) -> Vec<u8> {
+    let ByteTensorView {
+        bytes,
+        dims,
+        elem_size,
+    } = dst;
     let dim_indices: Vec<Vec<usize>> = dims
         .iter()
         .enumerate()
@@ -87,13 +96,12 @@ pub fn slice_assign_bytes(
     out
 }
 
-pub fn select_bytes(
-    bytes: &[u8],
-    dims: &[usize],
-    dim: usize,
-    indices: &[i64],
-    elem_size: usize,
-) -> (Shape, Vec<u8>) {
+pub fn select_bytes(src: ByteTensorView<'_>, dim: usize, indices: &[i64]) -> (Shape, Vec<u8>) {
+    let ByteTensorView {
+        bytes,
+        dims,
+        elem_size,
+    } = src;
     let mut out_dims = dims.to_vec();
     out_dims[dim] = indices.len();
     let total: usize = out_dims.iter().product();
@@ -112,12 +120,18 @@ pub fn select_bytes(
 
 pub fn gather_bytes(
     dim: usize,
-    bytes: &[u8],
-    dims: &[usize],
-    idx_vals: &[i64],
-    idx_dims: &[usize],
-    elem_size: usize,
+    src: ByteTensorView<'_>,
+    indices: GatherIndices<'_>,
 ) -> (Shape, Vec<u8>) {
+    let ByteTensorView {
+        bytes,
+        dims,
+        elem_size,
+    } = src;
+    let GatherIndices {
+        vals: idx_vals,
+        dims: idx_dims,
+    } = indices;
     let total: usize = idx_dims.iter().product();
     let in_strides = compute_strides(dims);
     let mut out = vec![0u8; total * elem_size];
@@ -132,13 +146,13 @@ pub fn gather_bytes(
     (Shape::from(idx_dims.to_vec()), out)
 }
 
-pub fn mask_where_bytes(
-    bytes: &[u8],
-    mask_bytes: &[u8],
-    val_bytes: &[u8],
-    elem_size: usize,
-) -> Vec<u8> {
+pub fn mask_where_bytes(target: MaskedBytes<'_>, val_bytes: &[u8]) -> Vec<u8> {
+    let MaskedBytes {
+        bytes,
+        mask: mask_bytes,
+    } = target;
     let total = mask_bytes.len();
+    let elem_size = bytes.len().checked_div(total).unwrap_or(0);
     let mut out = bytes.to_vec();
     for i in 0..total {
         if mask_bytes[i] != 0 {
@@ -150,13 +164,13 @@ pub fn mask_where_bytes(
     out
 }
 
-pub fn mask_fill_bytes(
-    bytes: &[u8],
-    mask_bytes: &[u8],
-    fill_elem: &[u8],
-    elem_size: usize,
-) -> Vec<u8> {
+pub fn mask_fill_bytes(target: MaskedBytes<'_>, fill_elem: &[u8]) -> Vec<u8> {
+    let MaskedBytes {
+        bytes,
+        mask: mask_bytes,
+    } = target;
     let total = mask_bytes.len();
+    let elem_size = fill_elem.len();
     let mut out = bytes.to_vec();
     for i in 0..total {
         if mask_bytes[i] != 0 {
