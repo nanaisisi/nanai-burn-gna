@@ -61,7 +61,7 @@ pub(super) fn int_remainder_scalar(
 
 pub(super) fn int_matmul(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::execute_int_matmul(lhs, rhs)
 }

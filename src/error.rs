@@ -11,6 +11,12 @@ pub enum GnaBackendError {
 
     #[error("Device #{0} is not initialized")]
     DeviceNotInitialized(u16),
+
+    #[error("Tensor rank must be at least 2 for GNA matrix multiplication, got {0}")]
+    InvalidMatmulRank(usize),
+
+    #[error("Integer value {0} exceeds GNA hardware Int16 input/weight range [-32768, 32767]")]
+    IntValueOutOfI16Range(i64),
 }
 
 /// Result type alias for `nanai-burn-gna`.

@@ -73,9 +73,9 @@ pub(super) fn float_remainder_scalar(
 
 pub(super) fn float_matmul(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: GnaFloatTensorPrimitive,
+    rhs: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::execute_float_matmul(lhs, rhs)
 }
 
 pub(super) fn float_cross(

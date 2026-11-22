@@ -13,6 +13,7 @@ use enumset::{EnumSet, enum_set};
 
 mod bool;
 mod float;
+pub(crate) mod gna_exec;
 mod int;
 mod module;
 mod quantized;
