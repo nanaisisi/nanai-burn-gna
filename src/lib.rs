@@ -13,9 +13,8 @@ pub use tensor::{
 #[cfg(test)]
 mod tests {
     use super::*;
-    use burn::tensor::try_read_sync;
     use burn_backend::ops::{FloatTensorOps, IntTensorOps};
-    use burn_backend::{Backend, TensorData, TensorMetadata};
+    use burn_backend::{Backend, TensorData, TensorMetadata, try_read_sync};
 
     #[test]
     fn load_gna_library() {

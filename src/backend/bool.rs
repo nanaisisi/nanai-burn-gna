@@ -16,7 +16,7 @@ impl BoolTensorOps<Self> for GnaBackend {
         let num = shape.num_elements();
         GnaBoolTensorPrimitive {
             shape,
-            buffer: GnaBuffer::Bytes(std::sync::Arc::new(vec![0u8; num])),
+            buffer: GnaBuffer::zeros(num),
         }
     }
 
@@ -28,27 +28,23 @@ impl BoolTensorOps<Self> for GnaBackend {
         let num = shape.num_elements();
         GnaBoolTensorPrimitive {
             shape,
-            buffer: GnaBuffer::Bytes(std::sync::Arc::new(vec![1u8; num])),
+            buffer: GnaBuffer::filled(1, num),
         }
     }
 
     async fn bool_into_data(tensor: GnaBoolTensorPrimitive) -> Result<TensorData, ExecutionError> {
-        match tensor.buffer {
-            GnaBuffer::Bytes(bytes) => {
-                let data = TensorData::from_bytes_vec(
-                    bytes.as_slice().to_vec(),
-                    tensor.shape,
-                    DType::Bool(BoolStore::Native),
-                );
-                Ok(data)
-            }
-        }
+        let data = TensorData::from_bytes_vec(
+            tensor.buffer.to_vec(),
+            tensor.shape,
+            DType::Bool(BoolStore::Native),
+        );
+        Ok(data)
     }
 
     fn bool_from_data(data: TensorData, _device: &GnaDevice) -> GnaBoolTensorPrimitive {
         GnaBoolTensorPrimitive {
             shape: data.shape().clone(),
-            buffer: GnaBuffer::Bytes(std::sync::Arc::new(data.into_bytes().to_vec())),
+            buffer: GnaBuffer::from_bytes(data.into_bytes().to_vec()),
         }
     }
 

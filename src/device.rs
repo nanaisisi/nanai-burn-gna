@@ -1,5 +1,5 @@
-use burn::tensor::quantization::QuantConfig;
 use burn_backend::{BoolStore, DType, Device, DeviceId, DeviceOps, DeviceSettings};
+use burn_std::QuantConfig;
 
 /// Intel GNA device representation for Burn.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
