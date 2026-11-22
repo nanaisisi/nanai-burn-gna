@@ -1,4 +1,6 @@
-use burn_backend::ops::{ActivationOps, AttentionModuleOptions, FloatTensorOps, IntTensorOps, ModuleOps};
+use burn_backend::ops::{
+    ActivationOps, AttentionModuleOptions, FloatTensorOps, IntTensorOps, ModuleOps,
+};
 use burn_backend::{TensorData, try_read_sync};
 use nanai_burn_gna::{GnaBackend, GnaDevice, GnaLibrary};
 
@@ -83,9 +85,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Tiled FlashAttention on GNA hardware
-    let q = GnaBackend::float_from_data(TensorData::from([[[[1.0f32, 0.0], [0.0, 1.0]]]]), &gna_device);
-    let k = GnaBackend::float_from_data(TensorData::from([[[[1.0f32, 0.0], [0.0, 1.0]]]]), &gna_device);
-    let v = GnaBackend::float_from_data(TensorData::from([[[[10.0f32, 20.0], [30.0, 40.0]]]]), &gna_device);
+    let q = GnaBackend::float_from_data(
+        TensorData::from([[[[1.0f32, 0.0], [0.0, 1.0]]]]),
+        &gna_device,
+    );
+    let k = GnaBackend::float_from_data(
+        TensorData::from([[[[1.0f32, 0.0], [0.0, 1.0]]]]),
+        &gna_device,
+    );
+    let v = GnaBackend::float_from_data(
+        TensorData::from([[[[10.0f32, 20.0], [30.0, 40.0]]]]),
+        &gna_device,
+    );
     let attn = GnaBackend::attention(q, k, v, None, None, AttentionModuleOptions::default());
     let attn_data = try_read_sync(GnaBackend::float_into_data(attn))
         .expect("sync read")

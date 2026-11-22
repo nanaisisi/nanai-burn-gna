@@ -72,8 +72,7 @@ pub fn execute_flash_attention(
                     let mut kt_tile = vec![0.0f32; d_k * kv_len];
                     for r in 0..kv_len {
                         for c in 0..d_k {
-                            kt_tile[c * kv_len + r] =
-                                k_vals[k_head_off + (kv_start + r) * d_k + c];
+                            kt_tile[c * kv_len + r] = k_vals[k_head_off + (kv_start + r) * d_k + c];
                         }
                     }
                     let kt_prim = GnaFloatTensorPrimitive::new(
@@ -156,8 +155,7 @@ pub fn execute_flash_attention(
                     for r in 0..q_len {
                         let alpha = alphas[r];
                         for d in 0..d_v {
-                            o_acc[r * d_v + d] =
-                                o_acc[r * d_v + d] * alpha + pv_tile[r * d_v + d];
+                            o_acc[r * d_v + d] = o_acc[r * d_v + d] * alpha + pv_tile[r * d_v + d];
                         }
                     }
                 }
