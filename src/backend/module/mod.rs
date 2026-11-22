@@ -82,11 +82,13 @@ impl ModuleOps<Self> for GnaBackend {
     ) -> GnaFloatTensorPrimitive {
         pool::avg_pool2d(
             x,
-            kernel_size,
-            stride,
-            padding,
-            count_include_pad,
-            ceil_mode,
+            crate::backend::gna_exec::extra::pool::AvgPool2dParams {
+                kernel_size,
+                stride,
+                padding,
+                count_include_pad,
+                ceil_mode,
+            },
         )
     }
 
@@ -102,11 +104,13 @@ impl ModuleOps<Self> for GnaBackend {
         pool::avg_pool2d_backward(
             x,
             grad,
-            kernel_size,
-            stride,
-            padding,
-            count_include_pad,
-            ceil_mode,
+            crate::backend::gna_exec::extra::pool::AvgPool2dParams {
+                kernel_size,
+                stride,
+                padding,
+                count_include_pad,
+                ceil_mode,
+            },
         )
     }
 

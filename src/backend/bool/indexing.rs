@@ -145,7 +145,9 @@ pub(super) fn bool_unfold(
     tensor: GnaBoolTensorPrimitive,
     params: UnfoldParams,
 ) -> GnaBoolTensorPrimitive {
-    let (shape, bytes) =
-        layout::unfold_bytes(tensor.buffer().as_slice(), &tensor.shape(), params, 1);
+    let (shape, bytes) = layout::unfold_bytes(
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
+        params,
+    );
     GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
 }

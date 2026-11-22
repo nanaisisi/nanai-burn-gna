@@ -181,11 +181,14 @@ pub fn mask_fill_bytes(target: MaskedBytes<'_>, fill_elem: &[u8]) -> Vec<u8> {
 }
 
 pub fn unfold_bytes(
-    bytes: &[u8],
-    dims: &[usize],
+    src: ByteTensorView<'_>,
     params: crate::backend::UnfoldParams,
-    elem_size: usize,
 ) -> (Shape, Vec<u8>) {
+    let ByteTensorView {
+        bytes,
+        dims,
+        elem_size,
+    } = src;
     let windows = (dims[params.dim].saturating_sub(params.size)) / params.step + 1;
     let mut out_dims = dims.to_vec();
     out_dims[params.dim] = windows;

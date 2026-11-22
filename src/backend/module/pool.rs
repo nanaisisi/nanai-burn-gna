@@ -7,42 +7,17 @@ use burn_backend::ops::{MaxPool2dBackward, MaxPool2dWithIndices};
 
 pub(super) fn avg_pool2d(
     x: GnaFloatTensorPrimitive,
-    kernel_size: [usize; 2],
-    stride: [usize; 2],
-    padding: [usize; 2],
-    count_include_pad: bool,
-    ceil_mode: bool,
+    params: extra::pool::AvgPool2dParams,
 ) -> GnaFloatTensorPrimitive {
-    extra::execute_float_avg_pool2d(
-        x,
-        extra::pool::AvgPool2dParams {
-            kernel_size,
-            stride,
-            padding,
-            count_include_pad,
-            ceil_mode,
-        },
-    )
+    extra::execute_float_avg_pool2d(x, params)
 }
 
 pub(super) fn avg_pool2d_backward(
     x: GnaFloatTensorPrimitive,
     grad: GnaFloatTensorPrimitive,
-    kernel_size: [usize; 2],
-    stride: [usize; 2],
-    padding: [usize; 2],
-    count_include_pad: bool,
-    ceil_mode: bool,
+    params: extra::pool::AvgPool2dParams,
 ) -> GnaFloatTensorPrimitive {
-    module_ops::execute_float_avg_pool2d_backward(
-        x,
-        grad,
-        kernel_size,
-        stride,
-        padding,
-        count_include_pad,
-        ceil_mode,
-    )
+    module_ops::execute_float_avg_pool2d_backward(x, grad, params)
 }
 
 pub(super) fn adaptive_avg_pool2d(

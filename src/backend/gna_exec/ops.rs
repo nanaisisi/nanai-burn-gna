@@ -26,7 +26,13 @@ fn scalar_to_f32(s: Scalar) -> f32 {
     s.elem::<f32>()
 }
 
-fn gna_add_sub_i16(lhs: &[i16], rhs: &[i16], sign: i16) -> Vec<i32> {
+struct I16Pair<'a> {
+    lhs: &'a [i16],
+    rhs: &'a [i16],
+}
+
+fn gna_add_sub_i16(pair: I16Pair<'_>, sign: i16) -> Vec<i32> {
+    let I16Pair { lhs, rhs } = pair;
     let total = lhs.len();
     if total == 0 {
         return Vec::new();
@@ -134,7 +140,7 @@ pub fn execute_int_add_sub(
     let dtype = lhs.dtype();
     let l = to_i16_checked(&decode_ints(lhs.buffer().as_slice(), dtype));
     let r = to_i16_checked(&decode_ints(rhs.buffer().as_slice(), rhs.dtype()));
-    let out: Vec<i64> = gna_add_sub_i16(&l, &r, sign)
+    let out: Vec<i64> = gna_add_sub_i16(I16Pair { lhs: &l, rhs: &r }, sign)
         .into_iter()
         .map(|v| v as i64)
         .collect();
@@ -229,10 +235,16 @@ pub fn execute_float_add_sub(
     let l = decode_floats(&l_bytes, dtype);
     let r = decode_floats(&r_bytes, rhs.dtype());
     let (l_q, r_q, scale) = quantize_pair(&l, &r);
-    let out: Vec<f32> = gna_add_sub_i16(&l_q, &r_q, sign)
-        .into_iter()
-        .map(|v| v as f32 * scale)
-        .collect();
+    let out: Vec<f32> = gna_add_sub_i16(
+        I16Pair {
+            lhs: &l_q,
+            rhs: &r_q,
+        },
+        sign,
+    )
+    .into_iter()
+    .map(|v| v as f32 * scale)
+    .collect();
     GnaFloatTensorPrimitive::new(
         shape,
         dtype,

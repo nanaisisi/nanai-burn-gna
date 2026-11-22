@@ -179,10 +179,8 @@ pub(super) fn float_unfold(
 ) -> GnaFloatTensorPrimitive {
     let elem_size = DType::from(tensor.dtype()).size();
     let (out_shape, out_bytes) = layout::unfold_bytes(
-        tensor.buffer().as_slice(),
-        &tensor.shape(),
+        layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), elem_size),
         params,
-        elem_size,
     );
     GnaFloatTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }
