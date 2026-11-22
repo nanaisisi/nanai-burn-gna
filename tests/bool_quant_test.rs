@@ -1,5 +1,5 @@
 use burn_backend::ops::{BoolTensorOps, FloatTensorOps, IntTensorOps, QTensorOps};
-use burn_backend::quantization::QuantizationParametersPrimitive;
+use burn_backend::quantization::{QuantValue, QuantizationParametersPrimitive};
 use burn_backend::{
     BoolStore, DType, FloatDType, IntDType, Scalar, Shape, Slice, TensorData, TensorMetadata,
     try_read_sync,
@@ -378,4 +378,38 @@ fn q_layout_ops() {
         read_f32(GnaBackend::dequantize(sliced, FloatDType::F32)),
         vec![2.0, 3.0, 5.0, 6.0]
     );
+}
+
+#[test]
+fn q_q4f_q2f_and_zero_scale() {
+    let device = GnaDevice::default();
+    for value in [QuantValue::Q4F, QuantValue::Q2F] {
+        let scheme = GnaDevice::default_quant_scheme().with_value(value);
+        let input =
+            GnaBackend::float_from_data(TensorData::from([0.0f32, 1.0, -1.0, 0.5]), &device);
+        let scale = GnaBackend::float_from_data(TensorData::from([0.5f32]), &device);
+        let q = GnaBackend::quantize(
+            input.clone(),
+            &scheme,
+            QuantizationParametersPrimitive {
+                scales: scale,
+                global: None,
+            },
+        );
+        let deq = read_f32(GnaBackend::dequantize(q, FloatDType::F32));
+        assert_eq!(deq.len(), 4);
+
+        // scale = 0.0 edge case
+        let zero_scale = GnaBackend::float_from_data(TensorData::from([0.0f32]), &device);
+        let q_zero = GnaBackend::quantize(
+            input,
+            &scheme,
+            QuantizationParametersPrimitive {
+                scales: zero_scale,
+                global: None,
+            },
+        );
+        let deq_zero = read_f32(GnaBackend::dequantize(q_zero, FloatDType::F32));
+        assert_eq!(deq_zero, vec![0.0, 0.0, 0.0, 0.0]);
+    }
 }

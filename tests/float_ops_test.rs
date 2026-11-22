@@ -612,13 +612,31 @@ fn test_float_indexing_update_ops() {
     let src = make_f32(TensorData::from([[3.0f32, 5.0], [2.0, 4.0]]));
 
     // float_scatter with Add, Mul, Min, Max
-    let sc_add = GnaBackend::float_scatter(1, base.clone(), idx.clone(), src.clone(), IndexingUpdateOp::Add);
+    let sc_add = GnaBackend::float_scatter(
+        1,
+        base.clone(),
+        idx.clone(),
+        src.clone(),
+        IndexingUpdateOp::Add,
+    );
     assert_close(&read_f32(sc_add), &[5.0, 4.0, 11.0, 12.0, 12.0, 12.0], 1e-5);
 
-    let sc_mul = GnaBackend::float_scatter(1, base.clone(), idx.clone(), src.clone(), IndexingUpdateOp::Mul);
+    let sc_mul = GnaBackend::float_scatter(
+        1,
+        base.clone(),
+        idx.clone(),
+        src.clone(),
+        IndexingUpdateOp::Mul,
+    );
     assert_close(&read_f32(sc_mul), &[6.0, 4.0, 30.0, 32.0, 20.0, 12.0], 1e-5);
 
-    let sc_min = GnaBackend::float_scatter(1, base.clone(), idx.clone(), src.clone(), IndexingUpdateOp::Min);
+    let sc_min = GnaBackend::float_scatter(
+        1,
+        base.clone(),
+        idx.clone(),
+        src.clone(),
+        IndexingUpdateOp::Min,
+    );
     assert_close(&read_f32(sc_min), &[2.0, 4.0, 5.0, 4.0, 2.0, 12.0], 1e-5);
 
     let sc_max = GnaBackend::float_scatter(1, base.clone(), idx, src, IndexingUpdateOp::Max);
@@ -628,13 +646,39 @@ fn test_float_indexing_update_ops() {
     let sel_idx = GnaBackend::int_from_data(TensorData::from([1i32, 0]), &dev);
     let sel_val = make_f32(TensorData::from([[2.0f32, 3.0, 4.0], [5.0, 6.0, 7.0]]));
 
-    let sa_add = GnaBackend::float_select_assign(base.clone(), 0, sel_idx.clone(), sel_val.clone(), IndexingUpdateOp::Add);
-    assert_close(&read_f32(sa_add), &[7.0, 10.0, 13.0, 10.0, 13.0, 16.0], 1e-5);
+    let sa_add = GnaBackend::float_select_assign(
+        base.clone(),
+        0,
+        sel_idx.clone(),
+        sel_val.clone(),
+        IndexingUpdateOp::Add,
+    );
+    assert_close(
+        &read_f32(sa_add),
+        &[7.0, 10.0, 13.0, 10.0, 13.0, 16.0],
+        1e-5,
+    );
 
-    let sa_mul = GnaBackend::float_select_assign(base.clone(), 0, sel_idx.clone(), sel_val.clone(), IndexingUpdateOp::Mul);
-    assert_close(&read_f32(sa_mul), &[10.0, 24.0, 42.0, 16.0, 30.0, 48.0], 1e-5);
+    let sa_mul = GnaBackend::float_select_assign(
+        base.clone(),
+        0,
+        sel_idx.clone(),
+        sel_val.clone(),
+        IndexingUpdateOp::Mul,
+    );
+    assert_close(
+        &read_f32(sa_mul),
+        &[10.0, 24.0, 42.0, 16.0, 30.0, 48.0],
+        1e-5,
+    );
 
-    let sa_min = GnaBackend::float_select_assign(base.clone(), 0, sel_idx.clone(), sel_val.clone(), IndexingUpdateOp::Min);
+    let sa_min = GnaBackend::float_select_assign(
+        base.clone(),
+        0,
+        sel_idx.clone(),
+        sel_val.clone(),
+        IndexingUpdateOp::Min,
+    );
     assert_close(&read_f32(sa_min), &[2.0, 4.0, 6.0, 2.0, 3.0, 4.0], 1e-5);
 
     let sa_max = GnaBackend::float_select_assign(base, 0, sel_idx, sel_val, IndexingUpdateOp::Max);
@@ -685,4 +729,53 @@ fn test_avg_pool2d_options() {
     let out_ceil = GnaBackend::avg_pool2d(x, [2, 2], [2, 2], [0, 0], false, true);
     assert_eq!(out_ceil.shape().dims(), [1, 1, 2, 2]);
     assert_close(&read_f32(out_ceil), &[3.0, 4.5, 7.5, 9.0], 0.1);
+}
+
+#[test]
+fn test_float_matmul_zero_tensors() {
+    let zeros = make_f32(TensorData::from([[0.0f32, 0.0], [0.0, 0.0]]));
+    let nonzero = make_f32(TensorData::from([[1.0f32, 2.0], [3.0, 4.0]]));
+
+    let out1 = GnaBackend::float_matmul(zeros.clone(), nonzero.clone());
+    assert_close(&read_f32(out1), &[0.0, 0.0, 0.0, 0.0], 1e-6);
+
+    let out2 = GnaBackend::float_matmul(nonzero, zeros);
+    assert_close(&read_f32(out2), &[0.0, 0.0, 0.0, 0.0], 1e-6);
+}
+
+#[test]
+fn test_float_mask_fill_f16_and_f64() {
+    let dev = device();
+    let mask = GnaBackend::bool_from_data(TensorData::from([true, false, true]), &dev);
+
+    // F16 (2-byte scalar_to_le_bytes)
+    let f16_t = GnaBackend::float_from_data(
+        TensorData::from([1.0f32, 2.0, 3.0]).convert_dtype(DType::F16),
+        &dev,
+    );
+    let filled_f16 = GnaBackend::float_mask_fill(f16_t, mask.clone(), Scalar::from(0.0f32));
+    assert_eq!(filled_f16.dtype(), FloatDType::F16);
+    assert_close(
+        &read_f32(GnaBackend::float_cast(filled_f16, FloatDType::F32)),
+        &[0.0, 2.0, 0.0],
+        1e-3,
+    );
+
+    // F64 (8-byte scalar_to_le_bytes)
+    let f64_t = GnaBackend::float_from_data(TensorData::from([1.0f64, 2.0, 3.0]), &dev);
+    let filled_f64 = GnaBackend::float_mask_fill(f64_t, mask, Scalar::from(-5.0f64));
+    assert_eq!(filled_f64.dtype(), FloatDType::F64);
+    assert_close(
+        &read_f32(GnaBackend::float_cast(filled_f64, FloatDType::F32)),
+        &[-5.0, 2.0, -5.0],
+        1e-6,
+    );
+}
+
+#[test]
+#[should_panic]
+fn test_float_matmul_1d_rhs_panics() {
+    let lhs = make_f32(TensorData::from([[1.0f32, 2.0], [3.0, 4.0]]));
+    let rhs = make_f32(TensorData::from([1.0f32, 2.0]));
+    let _ = GnaBackend::float_matmul(lhs, rhs);
 }

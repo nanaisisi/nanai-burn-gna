@@ -495,7 +495,53 @@ fn test_int_scatter_select_assign_ops() {
         (IndexingUpdateOp::Min, vec![2, 3, 6, 8, 10, 12]),
         (IndexingUpdateOp::Max, vec![2, 4, 6, 8, 20, 12]),
     ] {
-        let out = GnaBackend::int_select_assign(base.clone(), 1, sel_idx.clone(), sel_val.clone(), op);
+        let out =
+            GnaBackend::int_select_assign(base.clone(), 1, sel_idx.clone(), sel_val.clone(), op);
         assert_eq!(read_i32(out), expected);
     }
+}
+
+#[test]
+#[should_panic(expected = "IntValueOutOfI16Range")]
+fn test_int_add_out_of_i16_range_panics() {
+    let a = int_tensor_1d(vec![40000]);
+    let b = int_tensor_1d(vec![1]);
+    let _ = GnaBackend::int_add(a, b);
+}
+
+#[test]
+#[should_panic(expected = "IntValueOutOfI16Range")]
+fn test_int_matmul_out_of_i16_range_panics() {
+    let a = int_tensor(vec![40000, 1, 1, 1], [2, 2]);
+    let b = int_tensor(vec![1, 0, 0, 1], [2, 2]);
+    let _ = GnaBackend::int_matmul(a, b);
+}
+
+#[test]
+fn test_int_mask_fill_i8_i16_i64() {
+    let mask = GnaBackend::bool_from_data(TensorData::new(vec![true, false, true], [3]), &dev());
+
+    let t_i8 = GnaBackend::int_from_data(TensorData::new(vec![1i8, 2, 3], [3]), &dev());
+    let f_i8 = GnaBackend::int_mask_fill(t_i8, mask.clone(), Scalar::new(-5i8, &DType::I8));
+    let v_i8 = block_on(GnaBackend::int_into_data(f_i8))
+        .unwrap()
+        .try_to_vec::<i8>()
+        .unwrap();
+    assert_eq!(v_i8, vec![-5, 2, -5]);
+
+    let t_i16 = GnaBackend::int_from_data(TensorData::new(vec![10i16, 20, 30], [3]), &dev());
+    let f_i16 = GnaBackend::int_mask_fill(t_i16, mask.clone(), Scalar::new(-50i16, &DType::I16));
+    let v_i16 = block_on(GnaBackend::int_into_data(f_i16))
+        .unwrap()
+        .try_to_vec::<i16>()
+        .unwrap();
+    assert_eq!(v_i16, vec![-50, 20, -50]);
+
+    let t_i64 = GnaBackend::int_from_data(TensorData::new(vec![100i64, 200, 300], [3]), &dev());
+    let f_i64 = GnaBackend::int_mask_fill(t_i64, mask, Scalar::new(-500i64, &DType::I64));
+    let v_i64 = block_on(GnaBackend::int_into_data(f_i64))
+        .unwrap()
+        .try_to_vec::<i64>()
+        .unwrap();
+    assert_eq!(v_i64, vec![-500, 200, -500]);
 }

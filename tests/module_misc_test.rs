@@ -1,8 +1,8 @@
 use burn_backend::backend::ExecutionError;
 use burn_backend::ops::{
     AttentionModuleOptions, BoolTensorOps, ConvOptions, ConvTransposeOptions, DeformConvOptions,
-    FloatTensorOps, InterpolateMode, InterpolateOptions, ModuleOps, TransactionOps,
-    TransactionPrimitive,
+    FloatTensorOps, IntTensorOps, InterpolateMode, InterpolateOptions, ModuleOps, QTensorOps,
+    TransactionOps, TransactionPrimitive,
 };
 use burn_backend::tensor::{BoolTensor, FloatTensor};
 use burn_backend::{
@@ -368,4 +368,60 @@ fn test_invalid_matmul_rank_panics() {
     let a = f32_tensor(&[4], vec![1.0, 2.0, 3.0, 4.0]);
     let b = f32_tensor(&[4], vec![1.0, 2.0, 3.0, 4.0]);
     let _ = GnaBackend::float_matmul(a, b);
+}
+
+#[test]
+fn test_conv_and_pool_with_padding() {
+    // 1. conv2d with padding > 0
+    let x2 = f32_tensor(&[1, 1, 2, 2], vec![1.0, 2.0, 3.0, 4.0]);
+    let w2 = f32_tensor(&[1, 1, 2, 2], vec![1.0; 4]);
+    let c2_opts = ConvOptions::new([1, 1], [1, 1], [1, 1], 1);
+    let out_c2 = GnaBackend::conv2d(x2.clone(), w2, None, c2_opts);
+    // [1, 1, 3, 3] -> corners see 1 element, edges see 2, center sees 4
+    assert_close(
+        &to_f32_vec(out_c2),
+        &[1.0, 3.0, 2.0, 4.0, 10.0, 6.0, 3.0, 7.0, 4.0],
+        1e-5,
+    );
+
+    // 2. avg_pool2d with padding > 0
+    let out_p2 = GnaBackend::avg_pool2d(x2, [2, 2], [1, 1], [1, 1], false, false);
+    assert_eq!(to_f32_vec(out_p2).len(), 9);
+
+    // 3. conv3d with padding > 0
+    let x3 = f32_tensor(&[1, 1, 1, 2, 2], vec![1.0, 2.0, 3.0, 4.0]);
+    let w3 = f32_tensor(&[1, 1, 2, 2, 2], vec![1.0; 8]);
+    let c3_opts = ConvOptions::new([1, 1, 1], [1, 1, 1], [1, 1, 1], 1);
+    let out_c3 = GnaBackend::conv3d(x3, w3, None, c3_opts);
+    assert_eq!(to_f32_vec(out_c3).len(), 18);
+}
+
+#[test]
+fn test_tr_execute_all_four_tensor_types() {
+    let d = dev();
+    let t_f = f32_tensor(&[2], vec![1.0, 2.0]);
+    let t_i = GnaBackend::int_from_data(TensorData::new(vec![10i32, 20], [2]), &d);
+    let t_b = bool_tensor(&[2], vec![true, false]);
+    let t_q = GnaBackend::q_from_data(
+        TensorData::quantized(
+            vec![1i8, 2],
+            [2],
+            GnaDevice::default_quant_scheme(),
+            &[1.0f32],
+            None,
+        ),
+        &d,
+    );
+
+    let mut tx = TransactionPrimitive::default();
+    tx.read_floats.push(t_f);
+    tx.read_ints.push(t_i);
+    tx.read_bools.push(t_b);
+    tx.read_qfloats.push(t_q);
+
+    let res = poll_ready(GnaBackend::tr_execute(tx)).expect("tr_execute failed");
+    assert_eq!(res.read_floats.len(), 1);
+    assert_eq!(res.read_ints.len(), 1);
+    assert_eq!(res.read_bools.len(), 1);
+    assert_eq!(res.read_qfloats.len(), 1);
 }
