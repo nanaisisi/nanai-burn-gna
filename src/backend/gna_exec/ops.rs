@@ -69,11 +69,7 @@ fn gna_add_scalar_i16(lhs: &[i16], scalar_bias: i32) -> Vec<i32> {
     }
     let bias = vec![scalar_bias; 64];
     let mut out = gna_affine_i16(
-        GnaAffineOperands {
-            lhs: &packed,
-            rhs: &identity,
-            bias: Some(&bias),
-        },
+        GnaAffineOperands::new(&packed, &identity, Some(&bias)),
         GnaMatmulDims::new(m, 64, 64, 0),
     )
     .expect("GNA hardware add_scalar execution failed");
@@ -539,11 +535,7 @@ pub fn execute_float_conv2d(
         });
 
         let gna_out = gna_affine_i16(
-            GnaAffineOperands {
-                lhs: &col_i16,
-                rhs: &w_i16,
-                bias: b_i32.as_deref(),
-            },
+            GnaAffineOperands::new(&col_i16, &w_i16, b_i32.as_deref()),
             GnaMatmulDims::new(m, k_col, out_c_per_g, 0),
         )
         .expect("GNA hardware conv2d execution failed");

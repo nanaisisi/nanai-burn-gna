@@ -644,10 +644,10 @@ pub fn execute_float_avg_pool2d_backward(
     let gd: &[usize] = &grad.shape();
     let (batch, channels, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
     let (out_h, out_w) = (gd[2], gd[3]);
-    let [kh, kw] = params.kernel_size;
-    let [sh, sw] = params.stride;
-    let [ph, pw] = params.padding;
-    let count_include_pad = params.count_include_pad;
+    let [kh, kw] = params.kernel_size();
+    let [sh, sw] = params.stride();
+    let [ph, pw] = params.padding();
+    let count_include_pad = params.count_include_pad();
     let dtype = x.dtype();
     let g_vals = decode_floats(grad.buffer().as_slice(), grad.dtype());
     let mut x_grad = vec![0.0f32; batch * channels * in_h * in_w];

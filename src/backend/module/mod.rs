@@ -82,13 +82,13 @@ impl ModuleOps<Self> for GnaBackend {
     ) -> GnaFloatTensorPrimitive {
         pool::avg_pool2d(
             x,
-            crate::backend::gna_exec::extra::pool::AvgPool2dParams {
+            crate::backend::gna_exec::extra::pool::AvgPool2dParams::new(
                 kernel_size,
                 stride,
                 padding,
                 count_include_pad,
                 ceil_mode,
-            },
+            ),
         )
     }
 
@@ -104,13 +104,13 @@ impl ModuleOps<Self> for GnaBackend {
         pool::avg_pool2d_backward(
             x,
             grad,
-            crate::backend::gna_exec::extra::pool::AvgPool2dParams {
+            crate::backend::gna_exec::extra::pool::AvgPool2dParams::new(
                 kernel_size,
                 stride,
                 padding,
                 count_include_pad,
                 ceil_mode,
-            },
+            ),
         )
     }
 
@@ -150,7 +150,16 @@ impl ModuleOps<Self> for GnaBackend {
         dilation: [usize; 2],
         ceil_mode: bool,
     ) -> GnaFloatTensorPrimitive {
-        pool::max_pool2d(x, kernel_size, stride, padding, dilation, ceil_mode)
+        pool::max_pool2d(
+            x,
+            crate::backend::gna_exec::extra::pool::MaxPool2dParams::new(
+                kernel_size,
+                stride,
+                padding,
+                dilation,
+                ceil_mode,
+            ),
+        )
     }
 
     fn max_pool2d_with_indices(
@@ -164,11 +173,13 @@ impl ModuleOps<Self> for GnaBackend {
     ) -> MaxPool2dWithIndices<Self> {
         pool::max_pool2d_with_indices(
             x,
-            kernel_size,
-            stride,
-            padding,
-            dilation,
-            ceil_mode,
+            crate::backend::gna_exec::extra::pool::MaxPool2dParams::new(
+                kernel_size,
+                stride,
+                padding,
+                dilation,
+                ceil_mode,
+            ),
             indices_dtype,
         )
     }
@@ -185,11 +196,13 @@ impl ModuleOps<Self> for GnaBackend {
     ) -> MaxPool2dBackward<Self> {
         pool::max_pool2d_with_indices_backward(
             x,
-            kernel_size,
-            stride,
-            padding,
-            dilation,
-            ceil_mode,
+            crate::backend::gna_exec::extra::pool::MaxPool2dParams::new(
+                kernel_size,
+                stride,
+                padding,
+                dilation,
+                ceil_mode,
+            ),
             output_grad,
             indices,
         )

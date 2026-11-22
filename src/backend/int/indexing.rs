@@ -40,10 +40,7 @@ pub(super) fn int_mask_where(
     value: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
     let out_bytes = layout::mask_where_bytes(
-        layout::slice::MaskedBytes {
-            bytes: tensor.buffer().as_slice(),
-            mask: mask.buffer().as_slice(),
-        },
+        layout::slice::MaskedBytes::new(tensor.buffer().as_slice(), mask.buffer().as_slice()),
         value.buffer().as_slice(),
     );
     GnaIntTensorPrimitive::new(
@@ -61,10 +58,7 @@ pub(super) fn int_mask_fill(
     let elem_size = DType::from(tensor.dtype()).size();
     let fill = layout::int_scalar_to_le_bytes(value, elem_size);
     let out_bytes = layout::mask_fill_bytes(
-        layout::slice::MaskedBytes {
-            bytes: tensor.buffer().as_slice(),
-            mask: mask.buffer().as_slice(),
-        },
+        layout::slice::MaskedBytes::new(tensor.buffer().as_slice(), mask.buffer().as_slice()),
         &fill,
     );
     GnaIntTensorPrimitive::new(
@@ -84,10 +78,7 @@ pub(super) fn int_gather(
     let (out_shape, out_bytes) = layout::gather_bytes(
         dim,
         layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), elem_size),
-        layout::slice::GatherIndices {
-            vals: &idx_vals,
-            dims: &indices.shape(),
-        },
+        layout::slice::GatherIndices::new(&idx_vals, &indices.shape()),
     );
     GnaIntTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }

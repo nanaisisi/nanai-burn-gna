@@ -21,21 +21,45 @@ fn slice_indices_for_dim(slice: &Slice, dim_size: usize) -> Vec<usize> {
 }
 
 pub struct MaskedBytes<'a> {
-    pub bytes: &'a [u8],
-    pub mask: &'a [u8],
+    bytes: &'a [u8],
+    mask: &'a [u8],
+}
+
+impl<'a> MaskedBytes<'a> {
+    pub const fn new(bytes: &'a [u8], mask: &'a [u8]) -> Self {
+        Self { bytes, mask }
+    }
+
+    pub const fn bytes(&self) -> &'a [u8] {
+        self.bytes
+    }
+
+    pub const fn mask(&self) -> &'a [u8] {
+        self.mask
+    }
 }
 
 pub struct GatherIndices<'a> {
-    pub vals: &'a [i64],
-    pub dims: &'a [usize],
+    vals: &'a [i64],
+    dims: &'a [usize],
+}
+
+impl<'a> GatherIndices<'a> {
+    pub const fn new(vals: &'a [i64], dims: &'a [usize]) -> Self {
+        Self { vals, dims }
+    }
+
+    pub const fn vals(&self) -> &'a [i64] {
+        self.vals
+    }
+
+    pub const fn dims(&self) -> &'a [usize] {
+        self.dims
+    }
 }
 
 pub fn slice_bytes(src: ByteTensorView<'_>, slices: &[Slice]) -> (Shape, Vec<u8>) {
-    let ByteTensorView {
-        bytes,
-        dims,
-        elem_size,
-    } = src;
+    let (bytes, dims, elem_size) = (src.bytes(), src.dims(), src.elem_size());
     let dim_indices: Vec<Vec<usize>> = dims
         .iter()
         .enumerate()
@@ -64,11 +88,7 @@ pub fn slice_bytes(src: ByteTensorView<'_>, slices: &[Slice]) -> (Shape, Vec<u8>
 }
 
 pub fn slice_assign_bytes(dst: ByteTensorView<'_>, slices: &[Slice], val_bytes: &[u8]) -> Vec<u8> {
-    let ByteTensorView {
-        bytes,
-        dims,
-        elem_size,
-    } = dst;
+    let (bytes, dims, elem_size) = (dst.bytes(), dst.dims(), dst.elem_size());
     let dim_indices: Vec<Vec<usize>> = dims
         .iter()
         .enumerate()
@@ -97,11 +117,7 @@ pub fn slice_assign_bytes(dst: ByteTensorView<'_>, slices: &[Slice], val_bytes: 
 }
 
 pub fn select_bytes(src: ByteTensorView<'_>, dim: usize, indices: &[i64]) -> (Shape, Vec<u8>) {
-    let ByteTensorView {
-        bytes,
-        dims,
-        elem_size,
-    } = src;
+    let (bytes, dims, elem_size) = (src.bytes(), src.dims(), src.elem_size());
     let mut out_dims = dims.to_vec();
     out_dims[dim] = indices.len();
     let total: usize = out_dims.iter().product();
@@ -123,15 +139,8 @@ pub fn gather_bytes(
     src: ByteTensorView<'_>,
     indices: GatherIndices<'_>,
 ) -> (Shape, Vec<u8>) {
-    let ByteTensorView {
-        bytes,
-        dims,
-        elem_size,
-    } = src;
-    let GatherIndices {
-        vals: idx_vals,
-        dims: idx_dims,
-    } = indices;
+    let (bytes, dims, elem_size) = (src.bytes(), src.dims(), src.elem_size());
+    let (idx_vals, idx_dims) = (indices.vals(), indices.dims());
     let total: usize = idx_dims.iter().product();
     let in_strides = compute_strides(dims);
     let mut out = vec![0u8; total * elem_size];
@@ -147,10 +156,7 @@ pub fn gather_bytes(
 }
 
 pub fn mask_where_bytes(target: MaskedBytes<'_>, val_bytes: &[u8]) -> Vec<u8> {
-    let MaskedBytes {
-        bytes,
-        mask: mask_bytes,
-    } = target;
+    let (bytes, mask_bytes) = (target.bytes(), target.mask());
     let total = mask_bytes.len();
     let elem_size = bytes.len().checked_div(total).unwrap_or(0);
     let mut out = bytes.to_vec();
@@ -165,10 +171,7 @@ pub fn mask_where_bytes(target: MaskedBytes<'_>, val_bytes: &[u8]) -> Vec<u8> {
 }
 
 pub fn mask_fill_bytes(target: MaskedBytes<'_>, fill_elem: &[u8]) -> Vec<u8> {
-    let MaskedBytes {
-        bytes,
-        mask: mask_bytes,
-    } = target;
+    let (bytes, mask_bytes) = (target.bytes(), target.mask());
     let total = mask_bytes.len();
     let elem_size = fill_elem.len();
     let mut out = bytes.to_vec();
@@ -184,11 +187,7 @@ pub fn unfold_bytes(
     src: ByteTensorView<'_>,
     params: crate::backend::UnfoldParams,
 ) -> (Shape, Vec<u8>) {
-    let ByteTensorView {
-        bytes,
-        dims,
-        elem_size,
-    } = src;
+    let (bytes, dims, elem_size) = (src.bytes(), src.dims(), src.elem_size());
     let windows = (dims[params.dim].saturating_sub(params.size)) / params.step + 1;
     let mut out_dims = dims.to_vec();
     out_dims[params.dim] = windows;

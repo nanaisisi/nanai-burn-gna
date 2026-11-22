@@ -60,10 +60,7 @@ pub(super) fn float_gather(
     let (out_shape, out_bytes) = layout::gather_bytes(
         dim,
         layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), elem_size),
-        layout::slice::GatherIndices {
-            vals: &idx_vals,
-            dims: &indices.shape(),
-        },
+        layout::slice::GatherIndices::new(&idx_vals, &indices.shape()),
     );
     GnaFloatTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }
@@ -139,10 +136,7 @@ pub(super) fn float_mask_where(
     value: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
     let out_bytes = layout::mask_where_bytes(
-        layout::slice::MaskedBytes {
-            bytes: tensor.buffer().as_slice(),
-            mask: mask.buffer().as_slice(),
-        },
+        layout::slice::MaskedBytes::new(tensor.buffer().as_slice(), mask.buffer().as_slice()),
         value.buffer().as_slice(),
     );
     GnaFloatTensorPrimitive::new(
@@ -160,10 +154,7 @@ pub(super) fn float_mask_fill(
     let elem_size = DType::from(tensor.dtype()).size();
     let fill = layout::scalar_to_le_bytes(value, elem_size);
     let out_bytes = layout::mask_fill_bytes(
-        layout::slice::MaskedBytes {
-            bytes: tensor.buffer().as_slice(),
-            mask: mask.buffer().as_slice(),
-        },
+        layout::slice::MaskedBytes::new(tensor.buffer().as_slice(), mask.buffer().as_slice()),
         &fill,
     );
     GnaFloatTensorPrimitive::new(

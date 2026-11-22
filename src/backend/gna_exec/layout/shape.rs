@@ -3,9 +3,9 @@ use burn_backend::Shape;
 /// Borrowed view of a raw byte tensor with its shape and element size.
 #[derive(Clone, Copy)]
 pub struct ByteTensorView<'a> {
-    pub bytes: &'a [u8],
-    pub dims: &'a [usize],
-    pub elem_size: usize,
+    bytes: &'a [u8],
+    dims: &'a [usize],
+    elem_size: usize,
 }
 
 impl<'a> ByteTensorView<'a> {
@@ -15,6 +15,18 @@ impl<'a> ByteTensorView<'a> {
             dims,
             elem_size,
         }
+    }
+
+    pub const fn bytes(&self) -> &'a [u8] {
+        self.bytes
+    }
+
+    pub const fn dims(&self) -> &'a [usize] {
+        self.dims
+    }
+
+    pub const fn elem_size(&self) -> usize {
+        self.elem_size
     }
 }
 

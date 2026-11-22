@@ -8,21 +8,99 @@ use crate::tensor::float::GnaFloatTensorPrimitive;
 use crate::tensor::int::GnaIntTensorPrimitive;
 
 /// Parameters for 2D average pooling.
+#[derive(Clone, Copy, Debug)]
 pub struct AvgPool2dParams {
-    pub kernel_size: [usize; 2],
-    pub stride: [usize; 2],
-    pub padding: [usize; 2],
-    pub count_include_pad: bool,
-    pub ceil_mode: bool,
+    kernel_size: [usize; 2],
+    stride: [usize; 2],
+    padding: [usize; 2],
+    count_include_pad: bool,
+    ceil_mode: bool,
+}
+
+impl AvgPool2dParams {
+    pub const fn new(
+        kernel_size: [usize; 2],
+        stride: [usize; 2],
+        padding: [usize; 2],
+        count_include_pad: bool,
+        ceil_mode: bool,
+    ) -> Self {
+        Self {
+            kernel_size,
+            stride,
+            padding,
+            count_include_pad,
+            ceil_mode,
+        }
+    }
+
+    pub const fn kernel_size(&self) -> [usize; 2] {
+        self.kernel_size
+    }
+
+    pub const fn stride(&self) -> [usize; 2] {
+        self.stride
+    }
+
+    pub const fn padding(&self) -> [usize; 2] {
+        self.padding
+    }
+
+    pub const fn count_include_pad(&self) -> bool {
+        self.count_include_pad
+    }
+
+    pub const fn ceil_mode(&self) -> bool {
+        self.ceil_mode
+    }
 }
 
 /// Parameters for 2D max pooling.
+#[derive(Clone, Copy, Debug)]
 pub struct MaxPool2dParams {
-    pub kernel_size: [usize; 2],
-    pub stride: [usize; 2],
-    pub padding: [usize; 2],
-    pub dilation: [usize; 2],
-    pub ceil_mode: bool,
+    kernel_size: [usize; 2],
+    stride: [usize; 2],
+    padding: [usize; 2],
+    dilation: [usize; 2],
+    ceil_mode: bool,
+}
+
+impl MaxPool2dParams {
+    pub const fn new(
+        kernel_size: [usize; 2],
+        stride: [usize; 2],
+        padding: [usize; 2],
+        dilation: [usize; 2],
+        ceil_mode: bool,
+    ) -> Self {
+        Self {
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            ceil_mode,
+        }
+    }
+
+    pub const fn kernel_size(&self) -> [usize; 2] {
+        self.kernel_size
+    }
+
+    pub const fn stride(&self) -> [usize; 2] {
+        self.stride
+    }
+
+    pub const fn padding(&self) -> [usize; 2] {
+        self.padding
+    }
+
+    pub const fn dilation(&self) -> [usize; 2] {
+        self.dilation
+    }
+
+    pub const fn ceil_mode(&self) -> bool {
+        self.ceil_mode
+    }
 }
 
 /// Execute 2D average pooling on Intel GNA 3.0 hardware (`gna_matmul_i16` window summation).
@@ -33,11 +111,11 @@ pub fn execute_float_avg_pool2d(
     let x_shape = x.shape();
     let xd: &[usize] = &x_shape;
     let (batch, channels, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
-    let [kh, kw] = params.kernel_size;
-    let [sh, sw] = params.stride;
-    let [ph, pw] = params.padding;
-    let count_include_pad = params.count_include_pad;
-    let ceil_mode = params.ceil_mode;
+    let [kh, kw] = params.kernel_size();
+    let [sh, sw] = params.stride();
+    let [ph, pw] = params.padding();
+    let count_include_pad = params.count_include_pad();
+    let ceil_mode = params.ceil_mode();
 
     let out_h = if ceil_mode {
         (in_h + 2 * ph - kh).div_ceil(sh) + 1
@@ -158,11 +236,11 @@ pub fn execute_float_max_pool2d_with_indices(
     let x_shape = x.shape();
     let xd: &[usize] = &x_shape;
     let (batch, channels, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
-    let [kh, kw] = params.kernel_size;
-    let [sh, sw] = params.stride;
-    let [ph, pw] = params.padding;
-    let [dh, dw] = params.dilation;
-    let ceil_mode = params.ceil_mode;
+    let [kh, kw] = params.kernel_size();
+    let [sh, sw] = params.stride();
+    let [ph, pw] = params.padding();
+    let [dh, dw] = params.dilation();
+    let ceil_mode = params.ceil_mode();
 
     let out_h = if ceil_mode {
         (in_h + 2 * ph - dh * (kh - 1) - 1).div_ceil(sh) + 1

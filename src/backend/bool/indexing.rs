@@ -35,10 +35,7 @@ pub(super) fn bool_mask_where(
     value: GnaBoolTensorPrimitive,
 ) -> GnaBoolTensorPrimitive {
     let bytes = layout::mask_where_bytes(
-        layout::slice::MaskedBytes {
-            bytes: tensor.buffer().as_slice(),
-            mask: mask.buffer().as_slice(),
-        },
+        layout::slice::MaskedBytes::new(tensor.buffer().as_slice(), mask.buffer().as_slice()),
         value.buffer().as_slice(),
     );
     GnaBoolTensorPrimitive::new(tensor.shape(), GnaBuffer::from_bytes(bytes))
@@ -51,10 +48,7 @@ pub(super) fn bool_mask_fill(
 ) -> GnaBoolTensorPrimitive {
     let fill = [u8::from(value.elem::<bool>())];
     let bytes = layout::mask_fill_bytes(
-        layout::slice::MaskedBytes {
-            bytes: tensor.buffer().as_slice(),
-            mask: mask.buffer().as_slice(),
-        },
+        layout::slice::MaskedBytes::new(tensor.buffer().as_slice(), mask.buffer().as_slice()),
         &fill,
     );
     GnaBoolTensorPrimitive::new(tensor.shape(), GnaBuffer::from_bytes(bytes))
@@ -69,10 +63,7 @@ pub(super) fn bool_gather(
     let (shape, bytes) = layout::gather_bytes(
         dim,
         layout::shape::ByteTensorView::new(tensor.buffer().as_slice(), &tensor.shape(), 1),
-        layout::slice::GatherIndices {
-            vals: &idx_vals,
-            dims: &indices.shape(),
-        },
+        layout::slice::GatherIndices::new(&idx_vals, &indices.shape()),
     );
     GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
 }
