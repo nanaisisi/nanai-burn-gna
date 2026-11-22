@@ -1,0 +1,204 @@
+use super::GnaBackend;
+use crate::device::GnaDevice;
+use crate::tensor::{
+    GnaBoolTensorPrimitive, GnaBuffer, GnaFloatTensorPrimitive, GnaIntTensorPrimitive,
+};
+use burn_backend::ops::BoolTensorOps;
+use burn_backend::{
+    BoolStore, DType, ExecutionError, FloatDType, IntDType, Scalar, Shape, Slice, TensorData,
+};
+
+// ---------------------------------------------------------------------------
+// BoolTensorOps
+// ---------------------------------------------------------------------------
+impl BoolTensorOps<Self> for GnaBackend {
+    fn bool_empty(shape: Shape, _device: &GnaDevice, _dtype: BoolStore) -> GnaBoolTensorPrimitive {
+        let num = shape.num_elements();
+        GnaBoolTensorPrimitive {
+            shape,
+            buffer: GnaBuffer::Bytes(std::sync::Arc::new(vec![0u8; num])),
+        }
+    }
+
+    fn bool_zeros(shape: Shape, device: &GnaDevice, dtype: BoolStore) -> GnaBoolTensorPrimitive {
+        Self::bool_empty(shape, device, dtype)
+    }
+
+    fn bool_ones(shape: Shape, _device: &GnaDevice, _dtype: BoolStore) -> GnaBoolTensorPrimitive {
+        let num = shape.num_elements();
+        GnaBoolTensorPrimitive {
+            shape,
+            buffer: GnaBuffer::Bytes(std::sync::Arc::new(vec![1u8; num])),
+        }
+    }
+
+    async fn bool_into_data(tensor: GnaBoolTensorPrimitive) -> Result<TensorData, ExecutionError> {
+        match tensor.buffer {
+            GnaBuffer::Bytes(bytes) => {
+                let data = TensorData::from_bytes_vec(
+                    bytes.as_slice().to_vec(),
+                    tensor.shape,
+                    DType::Bool(BoolStore::Native),
+                );
+                Ok(data)
+            }
+        }
+    }
+
+    fn bool_from_data(data: TensorData, _device: &GnaDevice) -> GnaBoolTensorPrimitive {
+        GnaBoolTensorPrimitive {
+            shape: data.shape().clone(),
+            buffer: GnaBuffer::Bytes(std::sync::Arc::new(data.into_bytes().to_vec())),
+        }
+    }
+
+    fn bool_into_int(tensor: GnaBoolTensorPrimitive, out_dtype: IntDType) -> GnaIntTensorPrimitive {
+        GnaIntTensorPrimitive {
+            shape: tensor.shape,
+            dtype: out_dtype,
+            buffer: tensor.buffer,
+        }
+    }
+
+    fn bool_into_float(
+        tensor: GnaBoolTensorPrimitive,
+        out_dtype: FloatDType,
+    ) -> GnaFloatTensorPrimitive {
+        GnaFloatTensorPrimitive {
+            shape: tensor.shape,
+            dtype: out_dtype,
+            buffer: tensor.buffer,
+        }
+    }
+
+    fn bool_to_device(
+        tensor: GnaBoolTensorPrimitive,
+        _device: &GnaDevice,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_reshape(tensor: GnaBoolTensorPrimitive, shape: Shape) -> GnaBoolTensorPrimitive {
+        GnaBoolTensorPrimitive { shape, ..tensor }
+    }
+
+    fn bool_slice(tensor: GnaBoolTensorPrimitive, _slices: &[Slice]) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_slice_assign(
+        tensor: GnaBoolTensorPrimitive,
+        _slices: &[Slice],
+        _value: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_mask_where(
+        tensor: GnaBoolTensorPrimitive,
+        _mask: GnaBoolTensorPrimitive,
+        _value: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_mask_fill(
+        tensor: GnaBoolTensorPrimitive,
+        _mask: GnaBoolTensorPrimitive,
+        _value: Scalar,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_gather(
+        _dim: usize,
+        tensor: GnaBoolTensorPrimitive,
+        _indices: GnaIntTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_scatter_or(
+        _dim: usize,
+        tensor: GnaBoolTensorPrimitive,
+        _indices: GnaIntTensorPrimitive,
+        _value: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_select(
+        tensor: GnaBoolTensorPrimitive,
+        _dim: usize,
+        _indices: GnaIntTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_select_or(
+        tensor: GnaBoolTensorPrimitive,
+        _dim: usize,
+        _indices: GnaIntTensorPrimitive,
+        _value: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_equal(
+        lhs: GnaBoolTensorPrimitive,
+        _rhs: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
+        lhs
+    }
+
+    fn bool_equal_elem(lhs: GnaBoolTensorPrimitive, _rhs: Scalar) -> GnaBoolTensorPrimitive {
+        lhs
+    }
+
+    fn bool_not(tensor: GnaBoolTensorPrimitive) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_and(
+        lhs: GnaBoolTensorPrimitive,
+        _rhs: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
+        lhs
+    }
+
+    fn bool_or(
+        lhs: GnaBoolTensorPrimitive,
+        _rhs: GnaBoolTensorPrimitive,
+    ) -> GnaBoolTensorPrimitive {
+        lhs
+    }
+
+    fn bool_swap_dims(
+        tensor: GnaBoolTensorPrimitive,
+        _dim1: usize,
+        _dim2: usize,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_permute(tensor: GnaBoolTensorPrimitive, _axes: &[usize]) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_flip(tensor: GnaBoolTensorPrimitive, _axes: &[usize]) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+
+    fn bool_expand(tensor: GnaBoolTensorPrimitive, shape: Shape) -> GnaBoolTensorPrimitive {
+        GnaBoolTensorPrimitive { shape, ..tensor }
+    }
+
+    fn bool_unfold(
+        tensor: GnaBoolTensorPrimitive,
+        _dim: usize,
+        _size: usize,
+        _step: usize,
+    ) -> GnaBoolTensorPrimitive {
+        tensor
+    }
+}
