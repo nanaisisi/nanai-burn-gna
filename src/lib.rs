@@ -360,4 +360,49 @@ mod tests {
             .unwrap();
         assert_eq!(dq_d.as_slice::<f32>().unwrap(), &[1.0, -2.0]);
     }
+
+    #[test]
+    fn gna_backward_ops() {
+        let device = GnaDevice::default();
+        let x =
+            GnaBackend::float_from_data(TensorData::from([[[[1.0f32, 2.0], [3.0, 4.0]]]]), &device);
+        let grad = GnaBackend::float_from_data(TensorData::from([[[[4.0f32]]]]), &device);
+        let avg_b = GnaBackend::avg_pool2d_backward(
+            x.clone(),
+            grad.clone(),
+            [2, 2],
+            [1, 1],
+            [0, 0],
+            false,
+            false,
+        );
+        let avg_bd = try_read_sync(GnaBackend::float_into_data(avg_b))
+            .unwrap()
+            .unwrap();
+        assert_eq!(avg_bd.as_slice::<f32>().unwrap(), &[1.0, 1.0, 1.0, 1.0]);
+
+        let mp = GnaBackend::max_pool2d_with_indices(
+            x.clone(),
+            [2, 2],
+            [1, 1],
+            [0, 0],
+            [1, 1],
+            false,
+            burn_backend::IntDType::I32,
+        );
+        let mp_b = GnaBackend::max_pool2d_with_indices_backward(
+            x,
+            [2, 2],
+            [1, 1],
+            [0, 0],
+            [1, 1],
+            false,
+            grad,
+            mp.indices,
+        );
+        let mp_bd = try_read_sync(GnaBackend::float_into_data(mp_b.x_grad))
+            .unwrap()
+            .unwrap();
+        assert_eq!(mp_bd.as_slice::<f32>().unwrap(), &[0.0, 0.0, 0.0, 4.0]);
+    }
 }

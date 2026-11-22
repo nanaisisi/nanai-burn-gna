@@ -35,15 +35,23 @@ impl ModuleOps<Self> for GnaBackend {
     }
 
     fn deform_conv2d_backward(
-        _x: GnaFloatTensorPrimitive,
-        _offset: GnaFloatTensorPrimitive,
-        _weight: GnaFloatTensorPrimitive,
-        _mask: Option<GnaFloatTensorPrimitive>,
-        _bias: Option<GnaFloatTensorPrimitive>,
-        _output_grad: GnaFloatTensorPrimitive,
-        _options: DeformConvOptions<2>,
+        x: GnaFloatTensorPrimitive,
+        offset: GnaFloatTensorPrimitive,
+        weight: GnaFloatTensorPrimitive,
+        mask: Option<GnaFloatTensorPrimitive>,
+        bias: Option<GnaFloatTensorPrimitive>,
+        output_grad: GnaFloatTensorPrimitive,
+        options: DeformConvOptions<2>,
     ) -> DeformConv2dBackward<Self> {
-        unimplemented!("backward pass is not supported on GNA inference accelerator")
+        crate::backend::gna_exec::module_ops::execute_float_deform_conv2d_backward(
+            x,
+            offset,
+            weight,
+            mask,
+            bias,
+            output_grad,
+            options,
+        )
     }
 
     fn conv3d(
@@ -96,15 +104,23 @@ impl ModuleOps<Self> for GnaBackend {
     }
 
     fn avg_pool2d_backward(
-        _x: GnaFloatTensorPrimitive,
-        _grad: GnaFloatTensorPrimitive,
-        _kernel_size: [usize; 2],
-        _stride: [usize; 2],
-        _padding: [usize; 2],
-        _count_include_pad: bool,
-        _ceil_mode: bool,
+        x: GnaFloatTensorPrimitive,
+        grad: GnaFloatTensorPrimitive,
+        kernel_size: [usize; 2],
+        stride: [usize; 2],
+        padding: [usize; 2],
+        count_include_pad: bool,
+        ceil_mode: bool,
     ) -> GnaFloatTensorPrimitive {
-        unimplemented!("backward pass is not supported on GNA inference accelerator")
+        crate::backend::gna_exec::module_ops::execute_float_avg_pool2d_backward(
+            x,
+            grad,
+            kernel_size,
+            stride,
+            padding,
+            count_include_pad,
+            ceil_mode,
+        )
     }
 
     fn adaptive_avg_pool2d(
@@ -115,10 +131,10 @@ impl ModuleOps<Self> for GnaBackend {
     }
 
     fn adaptive_avg_pool2d_backward(
-        _x: GnaFloatTensorPrimitive,
-        _grad: GnaFloatTensorPrimitive,
+        x: GnaFloatTensorPrimitive,
+        grad: GnaFloatTensorPrimitive,
     ) -> GnaFloatTensorPrimitive {
-        unimplemented!("backward pass is not supported on GNA inference accelerator")
+        crate::backend::gna_exec::module_ops::execute_float_adaptive_avg_pool2d_backward(x, grad)
     }
 
     fn adaptive_avg_pool3d(
@@ -129,10 +145,10 @@ impl ModuleOps<Self> for GnaBackend {
     }
 
     fn adaptive_avg_pool3d_backward(
-        _x: GnaFloatTensorPrimitive,
-        _grad: GnaFloatTensorPrimitive,
+        x: GnaFloatTensorPrimitive,
+        grad: GnaFloatTensorPrimitive,
     ) -> GnaFloatTensorPrimitive {
-        unimplemented!("backward pass is not supported on GNA inference accelerator")
+        crate::backend::gna_exec::module_ops::execute_float_adaptive_avg_pool3d_backward(x, grad)
     }
 
     fn max_pool2d(
@@ -177,16 +193,20 @@ impl ModuleOps<Self> for GnaBackend {
     }
 
     fn max_pool2d_with_indices_backward(
-        _x: GnaFloatTensorPrimitive,
+        x: GnaFloatTensorPrimitive,
         _kernel_size: [usize; 2],
         _stride: [usize; 2],
         _padding: [usize; 2],
         _dilation: [usize; 2],
         _ceil_mode: bool,
-        _output_grad: GnaFloatTensorPrimitive,
-        _indices: GnaIntTensorPrimitive,
+        output_grad: GnaFloatTensorPrimitive,
+        indices: GnaIntTensorPrimitive,
     ) -> MaxPool2dBackward<Self> {
-        unimplemented!("backward pass is not supported on GNA inference accelerator")
+        crate::backend::gna_exec::module_ops::execute_float_max_pool2d_backward(
+            x,
+            output_grad,
+            indices,
+        )
     }
 
     fn interpolate(
@@ -198,12 +218,17 @@ impl ModuleOps<Self> for GnaBackend {
     }
 
     fn interpolate_backward(
-        _x: GnaFloatTensorPrimitive,
-        _grad: GnaFloatTensorPrimitive,
-        _output_size: [usize; 2],
-        _options: InterpolateOptions,
+        x: GnaFloatTensorPrimitive,
+        grad: GnaFloatTensorPrimitive,
+        output_size: [usize; 2],
+        options: InterpolateOptions,
     ) -> GnaFloatTensorPrimitive {
-        unimplemented!("backward pass is not supported on GNA inference accelerator")
+        crate::backend::gna_exec::module_ops::execute_float_interpolate_backward(
+            x,
+            grad,
+            output_size,
+            options,
+        )
     }
 
     fn attention(

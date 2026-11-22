@@ -1,6 +1,6 @@
 use burn_backend::ops::{
-    AttentionModuleOptions, ConvOptions, ConvTransposeOptions, DeformConvOptions, InterpolateMode,
-    InterpolateOptions,
+    AttentionModuleOptions, ConvOptions, ConvTransposeOptions, DeformConv2dBackward,
+    DeformConvOptions, InterpolateMode, InterpolateOptions, MaxPool2dBackward,
 };
 use burn_backend::quantization::{
     QuantScheme, QuantValue, QuantizationParametersPrimitive, QuantizedBytes,
@@ -8,10 +8,11 @@ use burn_backend::quantization::{
 use burn_backend::{FloatDType, Shape, Slice, TensorMetadata};
 
 use super::layout;
-use super::{decode_floats, encode_floats, execute_float_matmul};
+use super::{decode_floats, decode_ints, encode_floats, execute_float_matmul};
 use crate::tensor::bool::GnaBoolTensorPrimitive;
 use crate::tensor::buffer::GnaBuffer;
 use crate::tensor::float::GnaFloatTensorPrimitive;
+use crate::tensor::int::GnaIntTensorPrimitive;
 use crate::tensor::quantized::GnaQTensorPrimitive;
 
 /// Scaled dot-product attention using Intel GNA 3.0 hardware `matmul`.
@@ -609,5 +610,351 @@ pub fn transform_q_bytes(tensor: GnaQTensorPrimitive, op: QLayoutOp<'_>) -> GnaQ
         out_shape,
         scheme,
         GnaBuffer::from_bytes(qb_out.bytes.to_vec()),
+    )
+}
+
+pub fn execute_float_avg_pool2d_backward(
+    x: GnaFloatTensorPrimitive,
+    grad: GnaFloatTensorPrimitive,
+    kernel_size: [usize; 2],
+    stride: [usize; 2],
+    padding: [usize; 2],
+    count_include_pad: bool,
+    _ceil_mode: bool,
+) -> GnaFloatTensorPrimitive {
+    let xd: &[usize] = &x.shape();
+    let gd: &[usize] = &grad.shape();
+    let (batch, channels, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
+    let (out_h, out_w) = (gd[2], gd[3]);
+    let [kh, kw] = kernel_size;
+    let [sh, sw] = stride;
+    let [ph, pw] = padding;
+    let dtype = x.dtype();
+    let g_vals = decode_floats(grad.buffer().as_slice(), grad.dtype());
+    let mut x_grad = vec![0.0f32; batch * channels * in_h * in_w];
+
+    for b in 0..batch {
+        for c in 0..channels {
+            for oh in 0..out_h {
+                for ow in 0..out_w {
+                    let g = g_vals[((b * channels + c) * out_h + oh) * out_w + ow];
+                    let mut valid = 0usize;
+                    if !count_include_pad {
+                        for ky in 0..kh {
+                            for kx in 0..kw {
+                                let iy = (oh * sh + ky) as isize - ph as isize;
+                                let ix = (ow * sw + kx) as isize - pw as isize;
+                                if iy >= 0 && iy < in_h as isize && ix >= 0 && ix < in_w as isize {
+                                    valid += 1;
+                                }
+                            }
+                        }
+                    }
+                    let cnt = if count_include_pad {
+                        kh * kw
+                    } else {
+                        valid.max(1)
+                    };
+                    let contrib = g / cnt as f32;
+                    for ky in 0..kh {
+                        for kx in 0..kw {
+                            let iy = (oh * sh + ky) as isize - ph as isize;
+                            let ix = (ow * sw + kx) as isize - pw as isize;
+                            if iy >= 0 && iy < in_h as isize && ix >= 0 && ix < in_w as isize {
+                                x_grad[((b * channels + c) * in_h + iy as usize) * in_w
+                                    + ix as usize] += contrib;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    GnaFloatTensorPrimitive::new(
+        x.shape(),
+        dtype,
+        GnaBuffer::from_bytes(encode_floats(&x_grad, dtype)),
+    )
+}
+
+pub fn execute_float_adaptive_avg_pool2d_backward(
+    x: GnaFloatTensorPrimitive,
+    grad: GnaFloatTensorPrimitive,
+) -> GnaFloatTensorPrimitive {
+    let xd: &[usize] = &x.shape();
+    let gd: &[usize] = &grad.shape();
+    let (batch, channels, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
+    let (out_h, out_w) = (gd[2], gd[3]);
+    let dtype = x.dtype();
+    let g_vals = decode_floats(grad.buffer().as_slice(), grad.dtype());
+    let mut x_grad = vec![0.0f32; batch * channels * in_h * in_w];
+
+    for b in 0..batch {
+        for c in 0..channels {
+            for oh in 0..out_h {
+                let h0 = (oh * in_h) / out_h;
+                let h1 = ((oh + 1) * in_h).div_ceil(out_h);
+                for ow in 0..out_w {
+                    let w0 = (ow * in_w) / out_w;
+                    let w1 = ((ow + 1) * in_w).div_ceil(out_w);
+                    let cnt = ((h1 - h0) * (w1 - w0)).max(1) as f32;
+                    let contrib = g_vals[((b * channels + c) * out_h + oh) * out_w + ow] / cnt;
+                    for ih in h0..h1 {
+                        for iw in w0..w1 {
+                            x_grad[((b * channels + c) * in_h + ih) * in_w + iw] += contrib;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    GnaFloatTensorPrimitive::new(
+        x.shape(),
+        dtype,
+        GnaBuffer::from_bytes(encode_floats(&x_grad, dtype)),
+    )
+}
+
+pub fn execute_float_adaptive_avg_pool3d_backward(
+    x: GnaFloatTensorPrimitive,
+    grad: GnaFloatTensorPrimitive,
+) -> GnaFloatTensorPrimitive {
+    let xd: &[usize] = &x.shape();
+    let gd: &[usize] = &grad.shape();
+    let (batch, channels, in_d, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3], xd[4]);
+    let (out_d, out_h, out_w) = (gd[2], gd[3], gd[4]);
+    let dtype = x.dtype();
+    let g_vals = decode_floats(grad.buffer().as_slice(), grad.dtype());
+    let mut x_grad = vec![0.0f32; batch * channels * in_d * in_h * in_w];
+
+    for b in 0..batch {
+        for c in 0..channels {
+            for od in 0..out_d {
+                let d0 = (od * in_d) / out_d;
+                let d1 = ((od + 1) * in_d).div_ceil(out_d);
+                for oh in 0..out_h {
+                    let h0 = (oh * in_h) / out_h;
+                    let h1 = ((oh + 1) * in_h).div_ceil(out_h);
+                    for ow in 0..out_w {
+                        let w0 = (ow * in_w) / out_w;
+                        let w1 = ((ow + 1) * in_w).div_ceil(out_w);
+                        let cnt = ((d1 - d0) * (h1 - h0) * (w1 - w0)).max(1) as f32;
+                        let contrib = g_vals
+                            [(((b * channels + c) * out_d + od) * out_h + oh) * out_w + ow]
+                            / cnt;
+                        for iz in d0..d1 {
+                            for iy in h0..h1 {
+                                for ix in w0..w1 {
+                                    x_grad[(((b * channels + c) * in_d + iz) * in_h + iy)
+                                        * in_w
+                                        + ix] += contrib;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    GnaFloatTensorPrimitive::new(
+        x.shape(),
+        dtype,
+        GnaBuffer::from_bytes(encode_floats(&x_grad, dtype)),
+    )
+}
+
+pub fn execute_float_max_pool2d_backward(
+    x: GnaFloatTensorPrimitive,
+    output_grad: GnaFloatTensorPrimitive,
+    indices: GnaIntTensorPrimitive,
+) -> MaxPool2dBackward<crate::GnaBackend> {
+    let xd: &[usize] = &x.shape();
+    let gd: &[usize] = &output_grad.shape();
+    let (batch, channels, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
+    let (out_h, out_w) = (gd[2], gd[3]);
+    let dtype = x.dtype();
+    let g_vals = decode_floats(output_grad.buffer().as_slice(), output_grad.dtype());
+    let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
+    let mut x_grad = vec![0.0f32; batch * channels * in_h * in_w];
+
+    for b in 0..batch {
+        for c in 0..channels {
+            let in_base = (b * channels + c) * in_h * in_w;
+            let out_base = (b * channels + c) * out_h * out_w;
+            for i in 0..(out_h * out_w) {
+                let lin = idx_vals[out_base + i] as usize;
+                if lin < in_h * in_w {
+                    x_grad[in_base + lin] += g_vals[out_base + i];
+                }
+            }
+        }
+    }
+    MaxPool2dBackward::new(GnaFloatTensorPrimitive::new(
+        x.shape(),
+        dtype,
+        GnaBuffer::from_bytes(encode_floats(&x_grad, dtype)),
+    ))
+}
+
+pub fn execute_float_interpolate_backward(
+    x: GnaFloatTensorPrimitive,
+    grad: GnaFloatTensorPrimitive,
+    output_size: [usize; 2],
+    options: InterpolateOptions,
+) -> GnaFloatTensorPrimitive {
+    let xd: &[usize] = &x.shape();
+    let (batch, channels, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
+    let [out_h, out_w] = output_size;
+    let dtype = x.dtype();
+    let g_vals = decode_floats(grad.buffer().as_slice(), grad.dtype());
+    let mut x_grad = vec![0.0f32; batch * channels * in_h * in_w];
+
+    let map_coord = |o: usize, in_len: usize, out_len: usize| -> f32 {
+        if out_len <= 1 || in_len <= 1 {
+            return 0.0;
+        }
+        if options.align_corners {
+            o as f32 * (in_len - 1) as f32 / (out_len - 1) as f32
+        } else {
+            ((o as f32 + 0.5) * in_len as f32 / out_len as f32 - 0.5).max(0.0)
+        }
+    };
+
+    for b in 0..batch {
+        for c in 0..channels {
+            let in_base = (b * channels + c) * in_h * in_w;
+            let out_base = (b * channels + c) * out_h * out_w;
+            for oh in 0..out_h {
+                for ow in 0..out_w {
+                    let g = g_vals[out_base + oh * out_w + ow];
+                    let y = map_coord(oh, in_h, out_h);
+                    let x_c = map_coord(ow, in_w, out_w);
+                    match options.mode {
+                        InterpolateMode::Nearest | InterpolateMode::NearestExact => {
+                            let iy = (y.round() as usize).min(in_h - 1);
+                            let ix = (x_c.round() as usize).min(in_w - 1);
+                            x_grad[in_base + iy * in_w + ix] += g;
+                        }
+                        InterpolateMode::Bilinear
+                        | InterpolateMode::Bicubic
+                        | InterpolateMode::Lanczos3 => {
+                            let y0 = (y.floor() as usize).min(in_h - 1);
+                            let x0 = (x_c.floor() as usize).min(in_w - 1);
+                            let y1 = (y0 + 1).min(in_h - 1);
+                            let x1 = (x0 + 1).min(in_w - 1);
+                            let dy = y - y0 as f32;
+                            let dx = x_c - x0 as f32;
+                            x_grad[in_base + y0 * in_w + x0] += g * (1.0 - dy) * (1.0 - dx);
+                            x_grad[in_base + y0 * in_w + x1] += g * (1.0 - dy) * dx;
+                            x_grad[in_base + y1 * in_w + x0] += g * dy * (1.0 - dx);
+                            x_grad[in_base + y1 * in_w + x1] += g * dy * dx;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    GnaFloatTensorPrimitive::new(
+        x.shape(),
+        dtype,
+        GnaBuffer::from_bytes(encode_floats(&x_grad, dtype)),
+    )
+}
+
+pub fn execute_float_deform_conv2d_backward(
+    x: GnaFloatTensorPrimitive,
+    offset: GnaFloatTensorPrimitive,
+    weight: GnaFloatTensorPrimitive,
+    mask: Option<GnaFloatTensorPrimitive>,
+    bias: Option<GnaFloatTensorPrimitive>,
+    output_grad: GnaFloatTensorPrimitive,
+    options: DeformConvOptions<2>,
+) -> DeformConv2dBackward<crate::GnaBackend> {
+    let xd: &[usize] = &x.shape();
+    let wd: &[usize] = &weight.shape();
+    let gd: &[usize] = &output_grad.shape();
+    let (batch, in_c, in_h, in_w) = (xd[0], xd[1], xd[2], xd[3]);
+    let (out_c, in_c_per_g, kh, kw) = (wd[0], wd[1], wd[2], wd[3]);
+    let (out_h, out_w) = (gd[2], gd[3]);
+    let [sh, sw] = options.stride;
+    let [ph, pw] = options.padding;
+    let [dh, dw] = options.dilation;
+    let groups = options.weight_groups;
+    let out_c_per_g = out_c / groups;
+
+    let dtype = x.dtype();
+    let xv = decode_floats(x.buffer().as_slice(), dtype);
+    let wv = decode_floats(weight.buffer().as_slice(), weight.dtype());
+    let gv = decode_floats(output_grad.buffer().as_slice(), output_grad.dtype());
+
+    let mut x_grad = vec![0.0f32; xv.len()];
+    let mut w_grad = vec![0.0f32; wv.len()];
+
+    for b in 0..batch {
+        for oc in 0..out_c {
+            let g = oc / out_c_per_g;
+            for oh in 0..out_h {
+                for ow in 0..out_w {
+                    let grad_val = gv[((b * out_c + oc) * out_h + oh) * out_w + ow];
+                    for ic in 0..in_c_per_g {
+                        let ic_abs = g * in_c_per_g + ic;
+                        for ky in 0..kh {
+                            for kx in 0..kw {
+                                let iy = (oh * sh + ky * dh) as isize - ph as isize;
+                                let ix = (ow * sw + kx * dw) as isize - pw as isize;
+                                if iy >= 0 && iy < in_h as isize && ix >= 0 && ix < in_w as isize {
+                                    let xi = ((b * in_c + ic_abs) * in_h + iy as usize) * in_w
+                                        + ix as usize;
+                                    let wi = ((oc * in_c_per_g + ic) * kh + ky) * kw + kx;
+                                    x_grad[xi] += grad_val * wv[wi];
+                                    w_grad[wi] += grad_val * xv[xi];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let bias_grad = bias.map(|b_t| {
+        let mut bg = vec![0.0f32; out_c];
+        for b in 0..batch {
+            for (oc, bg_item) in bg.iter_mut().enumerate() {
+                for hw in 0..(out_h * out_w) {
+                    *bg_item += gv[(b * out_c + oc) * out_h * out_w + hw];
+                }
+            }
+        }
+        GnaFloatTensorPrimitive::new(
+            b_t.shape(),
+            dtype,
+            GnaBuffer::from_bytes(encode_floats(&bg, dtype)),
+        )
+    });
+
+    let offset_grad = GnaFloatTensorPrimitive::new(
+        offset.shape(),
+        offset.dtype(),
+        GnaBuffer::zeros(offset.buffer().len()),
+    );
+    let mask_grad = mask.map(|m| {
+        GnaFloatTensorPrimitive::new(m.shape(), m.dtype(), GnaBuffer::zeros(m.buffer().len()))
+    });
+
+    DeformConv2dBackward::new(
+        GnaFloatTensorPrimitive::new(
+            x.shape(),
+            dtype,
+            GnaBuffer::from_bytes(encode_floats(&x_grad, dtype)),
+        ),
+        offset_grad,
+        GnaFloatTensorPrimitive::new(
+            weight.shape(),
+            weight.dtype(),
+            GnaBuffer::from_bytes(encode_floats(&w_grad, weight.dtype())),
+        ),
+        mask_grad,
+        bias_grad,
     )
 }
