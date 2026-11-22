@@ -1,4 +1,6 @@
-use crate::tensor::{GnaBoolTensorPrimitive, GnaIntTensorPrimitive};
+use crate::backend::UnfoldParams;
+use crate::tensor::bool::GnaBoolTensorPrimitive;
+use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::tensor::IndexingUpdateOp;
 use burn_backend::{Scalar, Slice};
 
@@ -79,5 +81,12 @@ pub(super) fn int_permute(tensor: GnaIntTensorPrimitive, _axes: &[usize]) -> Gna
 }
 
 pub(super) fn int_flip(tensor: GnaIntTensorPrimitive, _axes: &[usize]) -> GnaIntTensorPrimitive {
+    tensor
+}
+
+pub(super) fn int_unfold(
+    tensor: GnaIntTensorPrimitive,
+    _params: UnfoldParams,
+) -> GnaIntTensorPrimitive {
     tensor
 }

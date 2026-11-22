@@ -1,8 +1,9 @@
 use super::GnaBackend;
 use crate::device::GnaDevice;
-use crate::tensor::{
-    GnaBuffer, GnaFloatTensorPrimitive, GnaIntTensorPrimitive, GnaQTensorPrimitive,
-};
+use crate::tensor::buffer::GnaBuffer;
+use crate::tensor::float::GnaFloatTensorPrimitive;
+use crate::tensor::int::GnaIntTensorPrimitive;
+use crate::tensor::quantized::GnaQTensorPrimitive;
 use burn_backend::ops::QTensorOps;
 use burn_backend::quantization::{QuantScheme, QuantizationParametersPrimitive};
 use burn_backend::{DType, ExecutionError, FloatDType, Shape, Slice, TensorData};
@@ -16,11 +17,11 @@ impl QTensorOps<Self> for GnaBackend {
             DType::QFloat(scheme) => scheme,
             _ => GnaQTensorPrimitive::default_scheme(),
         };
-        GnaQTensorPrimitive {
-            shape: data.shape().clone(),
+        GnaQTensorPrimitive::new(
+            data.shape().clone(),
             scheme,
-            buffer: GnaBuffer::from_bytes(data.into_bytes().to_vec()),
-        }
+            GnaBuffer::from_bytes(data.into_bytes().to_vec()),
+        )
     }
 
     fn quantize(
@@ -28,19 +29,13 @@ impl QTensorOps<Self> for GnaBackend {
         scheme: &QuantScheme,
         _qparams: QuantizationParametersPrimitive<Self>,
     ) -> GnaQTensorPrimitive {
-        GnaQTensorPrimitive {
-            shape: tensor.shape,
-            scheme: *scheme,
-            buffer: tensor.buffer,
-        }
+        let (shape, _dtype, buffer) = tensor.into_parts();
+        GnaQTensorPrimitive::new(shape, *scheme, buffer)
     }
 
     fn dequantize(tensor: GnaQTensorPrimitive, dtype: FloatDType) -> GnaFloatTensorPrimitive {
-        GnaFloatTensorPrimitive {
-            shape: tensor.shape,
-            dtype,
-            buffer: tensor.buffer,
-        }
+        let (shape, _scheme, buffer) = tensor.into_parts();
+        GnaFloatTensorPrimitive::new(shape, dtype, buffer)
     }
 
     fn q_to_device(tensor: GnaQTensorPrimitive, _device: &GnaDevice) -> GnaQTensorPrimitive {
@@ -48,20 +43,17 @@ impl QTensorOps<Self> for GnaBackend {
     }
 
     fn q_reshape(tensor: GnaQTensorPrimitive, shape: Shape) -> GnaQTensorPrimitive {
-        GnaQTensorPrimitive { shape, ..tensor }
+        tensor.with_shape(shape)
     }
 
     async fn q_into_data(tensor: GnaQTensorPrimitive) -> Result<TensorData, ExecutionError> {
-        let data = TensorData::from_bytes_vec(
-            tensor.buffer.to_vec(),
-            tensor.shape,
-            DType::QFloat(tensor.scheme),
-        );
+        let (shape, scheme, buffer) = tensor.into_parts();
+        let data = TensorData::from_bytes_vec(buffer.to_vec(), shape, DType::QFloat(scheme));
         Ok(data)
     }
 
     fn q_expand(tensor: GnaQTensorPrimitive, shape: Shape) -> GnaQTensorPrimitive {
-        GnaQTensorPrimitive { shape, ..tensor }
+        tensor.with_shape(shape)
     }
 
     fn q_swap_dims(tensor: GnaQTensorPrimitive, _dim1: usize, _dim2: usize) -> GnaQTensorPrimitive {

@@ -1,6 +1,8 @@
-use crate::backend::GnaBackend;
+use crate::backend::{GnaBackend, UnfoldParams};
 use crate::device::GnaDevice;
-use crate::tensor::{GnaBoolTensorPrimitive, GnaFloatTensorPrimitive, GnaIntTensorPrimitive};
+use crate::tensor::{
+    bool::GnaBoolTensorPrimitive, float::GnaFloatTensorPrimitive, int::GnaIntTensorPrimitive,
+};
 use burn_backend::ops::IntTensorOps;
 use burn_backend::tensor::IndexingUpdateOp;
 use burn_backend::{
@@ -12,6 +14,7 @@ mod bitwise;
 mod comparison;
 mod creation;
 mod indexing;
+mod reduce;
 mod unary;
 
 impl IntTensorOps<Self> for GnaBackend {
@@ -166,51 +169,51 @@ impl IntTensorOps<Self> for GnaBackend {
     }
 
     fn int_sum(tensor: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
-        unary::int_sum(tensor)
+        reduce::int_sum(tensor)
     }
 
     fn int_sum_dim(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
-        unary::int_sum_dim(tensor, dim)
+        reduce::int_sum_dim(tensor, dim)
     }
 
     fn int_prod(tensor: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
-        unary::int_prod(tensor)
+        reduce::int_prod(tensor)
     }
 
     fn int_prod_dim(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
-        unary::int_prod_dim(tensor, dim)
+        reduce::int_prod_dim(tensor, dim)
     }
 
     fn int_mean_dim(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
-        unary::int_mean_dim(tensor, dim)
+        reduce::int_mean_dim(tensor, dim)
     }
 
     fn int_cumsum(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
-        unary::int_cumsum(tensor, dim)
+        reduce::int_cumsum(tensor, dim)
     }
 
     fn int_cumprod(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
-        unary::int_cumprod(tensor, dim)
+        reduce::int_cumprod(tensor, dim)
     }
 
     fn int_cummin(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
-        unary::int_cummin(tensor, dim)
+        reduce::int_cummin(tensor, dim)
     }
 
     fn int_cummax(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
-        unary::int_cummax(tensor, dim)
+        reduce::int_cummax(tensor, dim)
     }
 
     fn int_argmax(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
-        unary::int_argmax(tensor, dim)
+        reduce::int_argmax(tensor, dim)
     }
 
     fn int_argtopk(tensor: GnaIntTensorPrimitive, dim: usize, k: usize) -> GnaIntTensorPrimitive {
-        unary::int_argtopk(tensor, dim, k)
+        reduce::int_argtopk(tensor, dim, k)
     }
 
     fn int_argmin(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
-        unary::int_argmin(tensor, dim)
+        reduce::int_argmin(tensor, dim)
     }
 
     fn int_abs(tensor: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
@@ -223,7 +226,7 @@ impl IntTensorOps<Self> for GnaBackend {
         size: usize,
         step: usize,
     ) -> GnaIntTensorPrimitive {
-        unary::int_unfold(tensor, dim, size, step)
+        indexing::int_unfold(tensor, UnfoldParams::new(dim, size, step))
     }
 
     fn int_equal(

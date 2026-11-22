@@ -1,4 +1,5 @@
-use crate::tensor::{GnaBoolTensorPrimitive, GnaIntTensorPrimitive};
+use crate::tensor::bool::GnaBoolTensorPrimitive;
+use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::{BoolStore, Scalar};
 
 pub(super) fn int_equal(
@@ -6,10 +7,8 @@ pub(super) fn int_equal(
     _rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }
 
 pub(super) fn int_equal_elem(
@@ -17,10 +16,8 @@ pub(super) fn int_equal_elem(
     _rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }
 
 pub(super) fn int_greater(
@@ -28,10 +25,8 @@ pub(super) fn int_greater(
     _rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }
 
 pub(super) fn int_greater_elem(
@@ -39,10 +34,8 @@ pub(super) fn int_greater_elem(
     _rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }
 
 pub(super) fn int_greater_equal(
@@ -50,10 +43,8 @@ pub(super) fn int_greater_equal(
     _rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }
 
 pub(super) fn int_greater_equal_elem(
@@ -61,10 +52,8 @@ pub(super) fn int_greater_equal_elem(
     _rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }
 
 pub(super) fn int_lower(
@@ -72,10 +61,8 @@ pub(super) fn int_lower(
     _rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }
 
 pub(super) fn int_lower_elem(
@@ -83,10 +70,8 @@ pub(super) fn int_lower_elem(
     _rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }
 
 pub(super) fn int_lower_equal(
@@ -94,10 +79,8 @@ pub(super) fn int_lower_equal(
     _rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }
 
 pub(super) fn int_lower_equal_elem(
@@ -105,8 +88,6 @@ pub(super) fn int_lower_equal_elem(
     _rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    GnaBoolTensorPrimitive {
-        shape: lhs.shape,
-        buffer: lhs.buffer,
-    }
+    let (shape, _dtype, buffer) = lhs.into_parts();
+    GnaBoolTensorPrimitive::new(shape, buffer)
 }

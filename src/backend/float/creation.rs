@@ -1,5 +1,7 @@
 use crate::device::GnaDevice;
-use crate::tensor::{GnaBuffer, GnaFloatTensorPrimitive, GnaIntTensorPrimitive};
+use crate::tensor::buffer::GnaBuffer;
+use crate::tensor::float::GnaFloatTensorPrimitive;
+use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::{DType, Distribution, ExecutionError, FloatDType, IntDType, Shape, TensorData};
 
 pub(super) fn float_from_data(data: TensorData, _device: &GnaDevice) -> GnaFloatTensorPrimitive {
@@ -11,11 +13,11 @@ pub(super) fn float_from_data(data: TensorData, _device: &GnaDevice) -> GnaFloat
         DType::BF16 => FloatDType::BF16,
         _ => FloatDType::F32,
     };
-    GnaFloatTensorPrimitive {
+    GnaFloatTensorPrimitive::new(
         shape,
         dtype,
-        buffer: GnaBuffer::from_bytes(data.into_bytes().to_vec()),
-    }
+        GnaBuffer::from_bytes(data.into_bytes().to_vec()),
+    )
 }
 
 pub(super) fn float_random(
@@ -30,8 +32,8 @@ pub(super) fn float_random(
 pub(super) async fn float_into_data(
     tensor: GnaFloatTensorPrimitive,
 ) -> Result<TensorData, ExecutionError> {
-    let data =
-        TensorData::from_bytes_vec(tensor.buffer.to_vec(), tensor.shape, tensor.dtype.into());
+    let (shape, dtype, buffer) = tensor.into_parts();
+    let data = TensorData::from_bytes_vec(buffer.to_vec(), shape, dtype.into());
     Ok(data)
 }
 
@@ -46,11 +48,8 @@ pub(super) fn float_into_int(
     tensor: GnaFloatTensorPrimitive,
     out_dtype: IntDType,
 ) -> GnaIntTensorPrimitive {
-    GnaIntTensorPrimitive {
-        shape: tensor.shape,
-        dtype: out_dtype,
-        buffer: tensor.buffer,
-    }
+    let (shape, _dtype, buffer) = tensor.into_parts();
+    GnaIntTensorPrimitive::new(shape, out_dtype, buffer)
 }
 
 pub(super) fn float_empty(
@@ -60,30 +59,30 @@ pub(super) fn float_empty(
 ) -> GnaFloatTensorPrimitive {
     let num_elements: usize = shape.num_elements();
     let bytes_per_elem = DType::from(dtype).size();
-    GnaFloatTensorPrimitive {
+    GnaFloatTensorPrimitive::new(
         shape,
         dtype,
-        buffer: GnaBuffer::zeros(num_elements * bytes_per_elem),
-    }
+        GnaBuffer::zeros(num_elements * bytes_per_elem),
+    )
 }
 
 pub(super) fn float_cast(
     tensor: GnaFloatTensorPrimitive,
     dtype: FloatDType,
 ) -> GnaFloatTensorPrimitive {
-    GnaFloatTensorPrimitive { dtype, ..tensor }
+    tensor.with_dtype(dtype)
 }
 
 pub(super) fn float_expand(
     tensor: GnaFloatTensorPrimitive,
     shape: Shape,
 ) -> GnaFloatTensorPrimitive {
-    GnaFloatTensorPrimitive { shape, ..tensor }
+    tensor.with_shape(shape)
 }
 
 pub(super) fn float_reshape(
     tensor: GnaFloatTensorPrimitive,
     shape: Shape,
 ) -> GnaFloatTensorPrimitive {
-    GnaFloatTensorPrimitive { shape, ..tensor }
+    tensor.with_shape(shape)
 }

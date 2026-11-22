@@ -1,8 +1,9 @@
 use super::GnaBackend;
 use crate::device::GnaDevice;
-use crate::tensor::{
-    GnaBoolTensorPrimitive, GnaBuffer, GnaFloatTensorPrimitive, GnaIntTensorPrimitive,
-};
+use crate::tensor::bool::GnaBoolTensorPrimitive;
+use crate::tensor::buffer::GnaBuffer;
+use crate::tensor::float::GnaFloatTensorPrimitive;
+use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::ops::BoolTensorOps;
 use burn_backend::{
     BoolStore, DType, ExecutionError, FloatDType, IntDType, Scalar, Shape, Slice, TensorData,
@@ -14,10 +15,7 @@ use burn_backend::{
 impl BoolTensorOps<Self> for GnaBackend {
     fn bool_empty(shape: Shape, _device: &GnaDevice, _dtype: BoolStore) -> GnaBoolTensorPrimitive {
         let num = shape.num_elements();
-        GnaBoolTensorPrimitive {
-            shape,
-            buffer: GnaBuffer::zeros(num),
-        }
+        GnaBoolTensorPrimitive::new(shape, GnaBuffer::zeros(num))
     }
 
     fn bool_zeros(shape: Shape, device: &GnaDevice, dtype: BoolStore) -> GnaBoolTensorPrimitive {
@@ -26,45 +24,34 @@ impl BoolTensorOps<Self> for GnaBackend {
 
     fn bool_ones(shape: Shape, _device: &GnaDevice, _dtype: BoolStore) -> GnaBoolTensorPrimitive {
         let num = shape.num_elements();
-        GnaBoolTensorPrimitive {
-            shape,
-            buffer: GnaBuffer::filled(1, num),
-        }
+        GnaBoolTensorPrimitive::new(shape, GnaBuffer::filled(1, num))
     }
 
     async fn bool_into_data(tensor: GnaBoolTensorPrimitive) -> Result<TensorData, ExecutionError> {
-        let data = TensorData::from_bytes_vec(
-            tensor.buffer.to_vec(),
-            tensor.shape,
-            DType::Bool(BoolStore::Native),
-        );
+        let (shape, buffer) = tensor.into_parts();
+        let data =
+            TensorData::from_bytes_vec(buffer.to_vec(), shape, DType::Bool(BoolStore::Native));
         Ok(data)
     }
 
     fn bool_from_data(data: TensorData, _device: &GnaDevice) -> GnaBoolTensorPrimitive {
-        GnaBoolTensorPrimitive {
-            shape: data.shape().clone(),
-            buffer: GnaBuffer::from_bytes(data.into_bytes().to_vec()),
-        }
+        GnaBoolTensorPrimitive::new(
+            data.shape().clone(),
+            GnaBuffer::from_bytes(data.into_bytes().to_vec()),
+        )
     }
 
     fn bool_into_int(tensor: GnaBoolTensorPrimitive, out_dtype: IntDType) -> GnaIntTensorPrimitive {
-        GnaIntTensorPrimitive {
-            shape: tensor.shape,
-            dtype: out_dtype,
-            buffer: tensor.buffer,
-        }
+        let (shape, buffer) = tensor.into_parts();
+        GnaIntTensorPrimitive::new(shape, out_dtype, buffer)
     }
 
     fn bool_into_float(
         tensor: GnaBoolTensorPrimitive,
         out_dtype: FloatDType,
     ) -> GnaFloatTensorPrimitive {
-        GnaFloatTensorPrimitive {
-            shape: tensor.shape,
-            dtype: out_dtype,
-            buffer: tensor.buffer,
-        }
+        let (shape, buffer) = tensor.into_parts();
+        GnaFloatTensorPrimitive::new(shape, out_dtype, buffer)
     }
 
     fn bool_to_device(
@@ -75,7 +62,7 @@ impl BoolTensorOps<Self> for GnaBackend {
     }
 
     fn bool_reshape(tensor: GnaBoolTensorPrimitive, shape: Shape) -> GnaBoolTensorPrimitive {
-        GnaBoolTensorPrimitive { shape, ..tensor }
+        tensor.with_shape(shape)
     }
 
     fn bool_slice(tensor: GnaBoolTensorPrimitive, _slices: &[Slice]) -> GnaBoolTensorPrimitive {
@@ -186,7 +173,7 @@ impl BoolTensorOps<Self> for GnaBackend {
     }
 
     fn bool_expand(tensor: GnaBoolTensorPrimitive, shape: Shape) -> GnaBoolTensorPrimitive {
-        GnaBoolTensorPrimitive { shape, ..tensor }
+        tensor.with_shape(shape)
     }
 
     fn bool_unfold(

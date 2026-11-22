@@ -17,6 +17,19 @@ mod int;
 mod module;
 mod quantized;
 
+#[allow(dead_code)]
+pub(crate) struct UnfoldParams {
+    pub dim: usize,
+    pub size: usize,
+    pub step: usize,
+}
+
+impl UnfoldParams {
+    pub(crate) const fn new(dim: usize, size: usize, step: usize) -> Self {
+        Self { dim, size, step }
+    }
+}
+
 /// Intel GNA Backend for Burn deep learning framework.
 #[derive(Clone, Copy, Default, Debug)]
 pub struct GnaBackend;
@@ -32,7 +45,7 @@ impl BackendTypes for GnaBackend {
 
 impl Backend for GnaBackend {
     fn name(device: &Self::Device) -> String {
-        format!("gna (device #{})", device.index)
+        format!("gna (device #{})", device.index())
     }
 
     fn seed(_device: &Self::Device, _seed: u64) {

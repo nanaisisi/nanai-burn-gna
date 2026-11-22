@@ -1,4 +1,4 @@
-use crate::tensor::GnaIntTensorPrimitive;
+use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::Scalar;
 
 pub(super) fn bitwise_and(

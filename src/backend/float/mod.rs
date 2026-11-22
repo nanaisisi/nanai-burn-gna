@@ -1,6 +1,8 @@
-use crate::backend::GnaBackend;
+use crate::backend::{GnaBackend, UnfoldParams};
 use crate::device::GnaDevice;
-use crate::tensor::{GnaBoolTensorPrimitive, GnaFloatTensorPrimitive, GnaIntTensorPrimitive};
+use crate::tensor::{
+    bool::GnaBoolTensorPrimitive, float::GnaFloatTensorPrimitive, int::GnaIntTensorPrimitive,
+};
 use burn_backend::ops::FloatTensorOps;
 use burn_backend::tensor::IndexingUpdateOp;
 use burn_backend::{
@@ -11,6 +13,7 @@ mod arithmetic;
 mod comparison;
 mod creation;
 mod indexing;
+mod reduce;
 mod unary;
 
 impl FloatTensorOps<Self> for GnaBackend {
@@ -162,31 +165,31 @@ impl FloatTensorOps<Self> for GnaBackend {
     }
 
     fn float_sum(tensor: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
-        unary::float_sum(tensor)
+        reduce::float_sum(tensor)
     }
 
     fn float_sum_dim(tensor: GnaFloatTensorPrimitive, dim: usize) -> GnaFloatTensorPrimitive {
-        unary::float_sum_dim(tensor, dim)
+        reduce::float_sum_dim(tensor, dim)
     }
 
     fn float_mean_dim(tensor: GnaFloatTensorPrimitive, dim: usize) -> GnaFloatTensorPrimitive {
-        unary::float_mean_dim(tensor, dim)
+        reduce::float_mean_dim(tensor, dim)
     }
 
     fn float_cumsum(tensor: GnaFloatTensorPrimitive, dim: usize) -> GnaFloatTensorPrimitive {
-        unary::float_cumsum(tensor, dim)
+        reduce::float_cumsum(tensor, dim)
     }
 
     fn float_cumprod(tensor: GnaFloatTensorPrimitive, dim: usize) -> GnaFloatTensorPrimitive {
-        unary::float_cumprod(tensor, dim)
+        reduce::float_cumprod(tensor, dim)
     }
 
     fn float_cummin(tensor: GnaFloatTensorPrimitive, dim: usize) -> GnaFloatTensorPrimitive {
-        unary::float_cummin(tensor, dim)
+        reduce::float_cummin(tensor, dim)
     }
 
     fn float_cummax(tensor: GnaFloatTensorPrimitive, dim: usize) -> GnaFloatTensorPrimitive {
-        unary::float_cummax(tensor, dim)
+        reduce::float_cummax(tensor, dim)
     }
 
     fn float_exp(tensor: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
@@ -282,7 +285,7 @@ impl FloatTensorOps<Self> for GnaBackend {
         dim: usize,
         out_dtype: IntDType,
     ) -> GnaIntTensorPrimitive {
-        unary::float_argmax(tensor, dim, out_dtype)
+        reduce::float_argmax(tensor, dim, out_dtype)
     }
 
     fn float_argtopk(
@@ -291,7 +294,7 @@ impl FloatTensorOps<Self> for GnaBackend {
         k: usize,
         out_dtype: IntDType,
     ) -> GnaIntTensorPrimitive {
-        unary::float_argtopk(tensor, dim, k, out_dtype)
+        reduce::float_argtopk(tensor, dim, k, out_dtype)
     }
 
     fn float_argmin(
@@ -299,7 +302,7 @@ impl FloatTensorOps<Self> for GnaBackend {
         dim: usize,
         out_dtype: IntDType,
     ) -> GnaIntTensorPrimitive {
-        unary::float_argmin(tensor, dim, out_dtype)
+        reduce::float_argmin(tensor, dim, out_dtype)
     }
 
     fn float_unfold(
@@ -308,7 +311,7 @@ impl FloatTensorOps<Self> for GnaBackend {
         size: usize,
         step: usize,
     ) -> GnaFloatTensorPrimitive {
-        unary::float_unfold(tensor, dim, size, step)
+        indexing::float_unfold(tensor, UnfoldParams::new(dim, size, step))
     }
 
     fn float_equal(

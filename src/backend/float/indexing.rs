@@ -1,4 +1,7 @@
-use crate::tensor::{GnaBoolTensorPrimitive, GnaFloatTensorPrimitive, GnaIntTensorPrimitive};
+use crate::backend::UnfoldParams;
+use crate::tensor::bool::GnaBoolTensorPrimitive;
+use crate::tensor::float::GnaFloatTensorPrimitive;
+use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::tensor::IndexingUpdateOp;
 use burn_backend::{Scalar, Slice};
 
@@ -87,6 +90,13 @@ pub(super) fn float_mask_fill(
     tensor: GnaFloatTensorPrimitive,
     _mask: GnaBoolTensorPrimitive,
     _value: Scalar,
+) -> GnaFloatTensorPrimitive {
+    tensor
+}
+
+pub(super) fn float_unfold(
+    tensor: GnaFloatTensorPrimitive,
+    _params: UnfoldParams,
 ) -> GnaFloatTensorPrimitive {
     tensor
 }

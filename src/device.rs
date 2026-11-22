@@ -6,13 +6,18 @@ use burn_std::QuantConfig;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
 pub struct GnaDevice {
     /// Device index identifier (typically 0 for the first GNA device)
-    pub index: u16,
+    index: u16,
 }
 
 impl GnaDevice {
     /// Create a new GNA device with the specified index.
     pub const fn new(index: u16) -> Self {
         Self { index }
+    }
+
+    /// Return the device index identifier.
+    pub const fn index(&self) -> u16 {
+        self.index
     }
 
     /// Get the count of available GNA hardware devices.

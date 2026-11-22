@@ -1,51 +1,4 @@
-use crate::tensor::{GnaFloatTensorPrimitive, GnaIntTensorPrimitive};
-use burn_backend::IntDType;
-
-pub(super) fn float_sum(tensor: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
-    tensor
-}
-
-pub(super) fn float_sum_dim(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-) -> GnaFloatTensorPrimitive {
-    tensor
-}
-
-pub(super) fn float_mean_dim(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-) -> GnaFloatTensorPrimitive {
-    tensor
-}
-
-pub(super) fn float_cumsum(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-) -> GnaFloatTensorPrimitive {
-    tensor
-}
-
-pub(super) fn float_cumprod(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-) -> GnaFloatTensorPrimitive {
-    tensor
-}
-
-pub(super) fn float_cummin(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-) -> GnaFloatTensorPrimitive {
-    tensor
-}
-
-pub(super) fn float_cummax(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-) -> GnaFloatTensorPrimitive {
-    tensor
-}
+use crate::tensor::float::GnaFloatTensorPrimitive;
 
 pub(super) fn float_exp(tensor: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
     tensor
@@ -132,51 +85,5 @@ pub(super) fn float_trunc(tensor: GnaFloatTensorPrimitive) -> GnaFloatTensorPrim
 }
 
 pub(super) fn float_erf(tensor: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
-    tensor
-}
-
-pub(super) fn float_argmax(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-    out_dtype: IntDType,
-) -> GnaIntTensorPrimitive {
-    GnaIntTensorPrimitive {
-        shape: tensor.shape,
-        dtype: out_dtype,
-        buffer: tensor.buffer,
-    }
-}
-
-pub(super) fn float_argtopk(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-    _k: usize,
-    out_dtype: IntDType,
-) -> GnaIntTensorPrimitive {
-    GnaIntTensorPrimitive {
-        shape: tensor.shape,
-        dtype: out_dtype,
-        buffer: tensor.buffer,
-    }
-}
-
-pub(super) fn float_argmin(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-    out_dtype: IntDType,
-) -> GnaIntTensorPrimitive {
-    GnaIntTensorPrimitive {
-        shape: tensor.shape,
-        dtype: out_dtype,
-        buffer: tensor.buffer,
-    }
-}
-
-pub(super) fn float_unfold(
-    tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-    _size: usize,
-    _step: usize,
-) -> GnaFloatTensorPrimitive {
     tensor
 }

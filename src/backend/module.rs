@@ -1,10 +1,12 @@
 use super::GnaBackend;
-use crate::tensor::{GnaBoolTensorPrimitive, GnaFloatTensorPrimitive, GnaIntTensorPrimitive};
-use burn_backend::IntDType;
+use crate::tensor::bool::GnaBoolTensorPrimitive;
+use crate::tensor::float::GnaFloatTensorPrimitive;
+use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::ops::{
     AttentionModuleOptions, ConvOptions, ConvTransposeOptions, DeformConv2dBackward,
     DeformConvOptions, InterpolateOptions, MaxPool2dBackward, MaxPool2dWithIndices, ModuleOps,
 };
+use burn_backend::{IntDType, TensorMetadata};
 
 // ---------------------------------------------------------------------------
 // ModuleOps
@@ -140,11 +142,7 @@ impl ModuleOps<Self> for GnaBackend {
         _ceil_mode: bool,
         indices_dtype: IntDType,
     ) -> MaxPool2dWithIndices<Self> {
-        let indices = GnaIntTensorPrimitive {
-            shape: x.shape.clone(),
-            dtype: indices_dtype,
-            buffer: x.buffer.clone(),
-        };
+        let indices = GnaIntTensorPrimitive::new(x.shape(), indices_dtype, x.buffer().clone());
         MaxPool2dWithIndices::new(x, indices)
     }
 

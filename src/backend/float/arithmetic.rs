@@ -1,4 +1,4 @@
-use crate::tensor::GnaFloatTensorPrimitive;
+use crate::tensor::float::GnaFloatTensorPrimitive;
 use burn_backend::Scalar;
 
 pub(super) fn float_add(
