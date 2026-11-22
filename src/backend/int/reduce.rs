@@ -38,7 +38,7 @@ pub(super) fn int_cummax(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTe
 }
 
 pub(super) fn int_argmax(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor.with_dtype(IntDType::I64)
+    tensor.with_dtype(IntDType::I32)
 }
 
 pub(super) fn int_argtopk(
@@ -46,9 +46,9 @@ pub(super) fn int_argtopk(
     _dim: usize,
     _k: usize,
 ) -> GnaIntTensorPrimitive {
-    tensor.with_dtype(IntDType::I64)
+    tensor.with_dtype(IntDType::I32)
 }
 
 pub(super) fn int_argmin(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor.with_dtype(IntDType::I64)
+    tensor.with_dtype(IntDType::I32)
 }
