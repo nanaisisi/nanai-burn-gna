@@ -12,10 +12,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let device_index = 0;
     let version = GnaDevice::get_version(&lib, device_index)?;
     println!(
-        "Device {} version: 0x{:x} ({})",
+        "Device {} version: {} ({:?})",
         device_index,
-        version.0,
-        version.as_str()
+        version.as_str(),
+        version
     );
 
     let device = GnaDevice::open(&lib, device_index)?;
@@ -108,11 +108,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(stats) = GnaBackend::last_performance_stats() {
         println!(
             "GNA HW stats: total_cycles={}, stall_cycles={}, hw_usage={:.2}%",
-            stats.total_cycles,
-            stats.stall_cycles,
+            stats.total_cycles(),
+            stats.stall_cycles(),
             stats.hw_usage_percentage()
         );
     }
+    println!(
+        "GNA allocated bytes: {}, uncontended: {}",
+        GnaBackend::allocated_bytes(),
+        GnaBackend::is_uncontended()?
+    );
 
     Ok(())
 }

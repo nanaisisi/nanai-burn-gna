@@ -64,7 +64,7 @@ pub fn gna_affine_i16(
     let biases_offset = align_up(weights_offset + weights_bytes, 4096);
     let total_bytes = align_up(biases_offset + biases_bytes, 4096);
 
-    let memory = hw_device.allocate_buffer(total_bytes)?;
+    let mut memory = hw_device.allocate_buffer(total_bytes)?;
     let base = memory.as_raw_ptr() as *mut u8;
 
     let inputs_ptr = base as *mut i16;
@@ -124,10 +124,12 @@ pub fn gna_affine_i16(
     let _ = request.enable_performance_counter();
 
     let mut result = vec![0i32; m * n];
+    let mut row_buf = vec![0i16; w_pad];
     for r in 0..m {
+        row_buf.fill(0);
+        row_buf[..k].copy_from_slice(&lhs[r * k..(r + 1) * k]);
+        memory.copy_from_typed_slice(&row_buf)?;
         unsafe {
-            std::ptr::write_bytes(inputs_ptr, 0, w_pad);
-            std::ptr::copy_nonoverlapping(lhs[r * k..].as_ptr(), inputs_ptr, k);
             std::ptr::write_bytes(outputs_ptr, 0, h_pad);
         }
         let req_id = request.enqueue()?;

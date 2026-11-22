@@ -37,6 +37,16 @@ impl GnaBackend {
     pub fn last_performance_stats() -> Option<crate::ffi::GnaPerformanceStats> {
         gna_exec::last_performance_stats()
     }
+
+    /// Return the total bytes currently allocated via GNA hardware memory allocators.
+    pub fn allocated_bytes() -> usize {
+        crate::ffi::gna_allocated_bytes()
+    }
+
+    /// Check whether the GNA device is currently uncontended by other processes.
+    pub fn is_uncontended() -> crate::Result<bool> {
+        Ok(crate::ffi::is_gna_uncontended()?)
+    }
 }
 
 impl BackendTypes for GnaBackend {
