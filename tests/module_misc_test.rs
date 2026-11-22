@@ -425,3 +425,25 @@ fn test_tr_execute_all_four_tensor_types() {
     assert_eq!(res.read_bools.len(), 1);
     assert_eq!(res.read_qfloats.len(), 1);
 }
+
+#[test]
+fn test_empty_float_matmul() {
+    let a = f32_tensor(&[0, 2], vec![]);
+    let b = f32_tensor(&[2, 2], vec![1.0, 2.0, 3.0, 4.0]);
+    let out = GnaBackend::float_matmul(a, b);
+    assert!(to_f32_vec(out).is_empty());
+}
+
+#[test]
+fn test_attention_multi_tile() {
+    // s_q = 65, s_k = 65 -> exercises TILE_Q = 64, TILE_KV = 64 multi-tile path
+    let (b, h, s, d) = (1, 1, 65, 4);
+    let n = b * h * s * d;
+    let q = f32_tensor(&[b, h, s, d], vec![0.25; n]);
+    let k = f32_tensor(&[b, h, s, d], vec![0.25; n]);
+    let v = f32_tensor(&[b, h, s, d], vec![1.0; n]);
+    let out = GnaBackend::attention(q, k, v, None, None, AttentionModuleOptions::default());
+    let out_vec = to_f32_vec(out);
+    assert_eq!(out_vec.len(), n);
+    assert_close(&out_vec[0..4], &[1.0, 1.0, 1.0, 1.0], 1e-4);
+}
