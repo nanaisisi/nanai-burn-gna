@@ -492,11 +492,19 @@ pub fn map_float_binary(
     f: impl Fn(f32, f32) -> f32,
 ) -> GnaFloatTensorPrimitive {
     let dtype = lhs.dtype();
-    let l = decode_floats(lhs.buffer().as_slice(), dtype);
-    let r = decode_floats(rhs.buffer().as_slice(), rhs.dtype());
-    let out: Vec<f32> = (0..l.len()).map(|i| f(l[i], r[i % r.len()])).collect();
+    let elem_size = burn_backend::DType::from(dtype).size();
+    let (shape, l_bytes, r_bytes) = super::layout::broadcast_pair_bytes(
+        lhs.buffer().as_slice(),
+        &lhs.shape(),
+        rhs.buffer().as_slice(),
+        &rhs.shape(),
+        elem_size,
+    );
+    let l = decode_floats(&l_bytes, dtype);
+    let r = decode_floats(&r_bytes, rhs.dtype());
+    let out: Vec<f32> = (0..l.len()).map(|i| f(l[i], r[i])).collect();
     GnaFloatTensorPrimitive::new(
-        lhs.shape(),
+        shape,
         dtype,
         GnaBuffer::from_bytes(encode_floats(&out, dtype)),
     )
@@ -533,11 +541,19 @@ pub fn map_int_binary(
     f: impl Fn(i64, i64) -> i64,
 ) -> GnaIntTensorPrimitive {
     let dtype = lhs.dtype();
-    let l = decode_ints(lhs.buffer().as_slice(), dtype);
-    let r = decode_ints(rhs.buffer().as_slice(), rhs.dtype());
-    let out: Vec<i64> = (0..l.len()).map(|i| f(l[i], r[i % r.len()])).collect();
+    let elem_size = burn_backend::DType::from(dtype).size();
+    let (shape, l_bytes, r_bytes) = super::layout::broadcast_pair_bytes(
+        lhs.buffer().as_slice(),
+        &lhs.shape(),
+        rhs.buffer().as_slice(),
+        &rhs.shape(),
+        elem_size,
+    );
+    let l = decode_ints(&l_bytes, dtype);
+    let r = decode_ints(&r_bytes, rhs.dtype());
+    let out: Vec<i64> = (0..l.len()).map(|i| f(l[i], r[i])).collect();
     GnaIntTensorPrimitive::new(
-        lhs.shape(),
+        shape,
         dtype,
         GnaBuffer::from_bytes(encode_ints(&out, dtype)),
     )

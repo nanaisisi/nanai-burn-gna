@@ -212,10 +212,17 @@ pub fn execute_float_add_sub(
     rhs: GnaFloatTensorPrimitive,
     sign: i16,
 ) -> GnaFloatTensorPrimitive {
-    let shape = lhs.shape();
     let dtype = lhs.dtype();
-    let l = decode_floats(lhs.buffer().as_slice(), dtype);
-    let r = decode_floats(rhs.buffer().as_slice(), rhs.dtype());
+    let elem_size = burn_backend::DType::from(dtype).size();
+    let (shape, l_bytes, r_bytes) = super::layout::broadcast_pair_bytes(
+        lhs.buffer().as_slice(),
+        &lhs.shape(),
+        rhs.buffer().as_slice(),
+        &rhs.shape(),
+        elem_size,
+    );
+    let l = decode_floats(&l_bytes, dtype);
+    let r = decode_floats(&r_bytes, rhs.dtype());
     let (l_q, r_q, scale) = quantize_pair(&l, &r);
     let out: Vec<f32> = gna_add_sub_i16(&l_q, &r_q, sign)
         .into_iter()
@@ -260,10 +267,17 @@ pub fn execute_float_mul(
     lhs: GnaFloatTensorPrimitive,
     rhs: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
-    let shape = lhs.shape();
     let dtype = lhs.dtype();
-    let l = decode_floats(lhs.buffer().as_slice(), dtype);
-    let r = decode_floats(rhs.buffer().as_slice(), rhs.dtype());
+    let elem_size = burn_backend::DType::from(dtype).size();
+    let (shape, l_bytes, r_bytes) = super::layout::broadcast_pair_bytes(
+        lhs.buffer().as_slice(),
+        &lhs.shape(),
+        rhs.buffer().as_slice(),
+        &rhs.shape(),
+        elem_size,
+    );
+    let l = decode_floats(&l_bytes, dtype);
+    let r = decode_floats(&r_bytes, rhs.dtype());
     let max_l = l.iter().fold(0.0f32, |acc, &v| acc.max(v.abs()));
     let max_r = r.iter().fold(0.0f32, |acc, &v| acc.max(v.abs()));
     let q_max = 16384.0f32;

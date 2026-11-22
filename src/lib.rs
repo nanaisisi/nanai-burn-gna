@@ -405,4 +405,27 @@ mod tests {
             .unwrap();
         assert_eq!(mp_bd.as_slice::<f32>().unwrap(), &[0.0, 0.0, 0.0, 4.0]);
     }
+
+    #[test]
+    fn gna_broadcast_2d() {
+        let device = GnaDevice::default();
+        let a = GnaBackend::float_from_data(
+            TensorData::from([[1.0f32, 2.0, 3.0], [4.0, 5.0, 6.0]]),
+            &device,
+        );
+        let b = GnaBackend::float_from_data(TensorData::from([[10.0f32], [20.0]]), &device);
+        let out = GnaBackend::float_add(a, b);
+        assert_eq!(out.shape().dims(), [2, 3]);
+        let d = try_read_sync(GnaBackend::float_into_data(out))
+            .unwrap()
+            .unwrap();
+        for (actual, exp) in d
+            .as_slice::<f32>()
+            .unwrap()
+            .iter()
+            .zip([11.0, 12.0, 13.0, 24.0, 25.0, 26.0])
+        {
+            assert!((actual - exp).abs() < 0.05, "expected {exp}, got {actual}");
+        }
+    }
 }

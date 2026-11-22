@@ -1,4 +1,4 @@
-use burn_backend::ops::{FloatTensorOps, IntTensorOps};
+use burn_backend::ops::{ActivationOps, FloatTensorOps, IntTensorOps};
 use burn_backend::{TensorData, try_read_sync};
 use nanai_burn_gna::{GnaBackend, GnaDevice, GnaLibrary};
 
@@ -62,6 +62,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "GNA float_matmul result: {:?}",
         data_f.as_slice::<f32>().expect("f32 slice")
+    );
+
+    // 2-layer MLP forward pass (Linear -> ReLU -> Linear) on GNA hardware
+    let x = GnaBackend::float_from_data(TensorData::from([[1.0f32, -2.0, 0.5]]), &gna_device);
+    let w1 = GnaBackend::float_from_data(
+        TensorData::from([[1.0f32, -1.0], [0.5, 1.0], [2.0, 0.0]]),
+        &gna_device,
+    );
+    let b1 = GnaBackend::float_from_data(TensorData::from([[0.5f32, 0.0]]), &gna_device);
+    let h1 = GnaBackend::relu(GnaBackend::float_add(GnaBackend::float_matmul(x, w1), b1));
+    let w2 = GnaBackend::float_from_data(TensorData::from([[2.0f32], [-1.0]]), &gna_device);
+    let out_mlp = GnaBackend::float_matmul(h1, w2);
+    let mlp_data = try_read_sync(GnaBackend::float_into_data(out_mlp))
+        .expect("sync read")
+        .expect("float_into_data");
+    println!(
+        "GNA 2-layer MLP result: {:?}",
+        mlp_data.as_slice::<f32>().expect("f32 slice")
     );
 
     Ok(())

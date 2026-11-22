@@ -438,6 +438,46 @@ pub fn unfold_bytes(
     (Shape::from(out_dims), out)
 }
 
+pub fn broadcast_shape(a: &[usize], b: &[usize]) -> Shape {
+    let max_rank = a.len().max(b.len());
+    let mut out = vec![1usize; max_rank];
+    for i in 0..max_rank {
+        let da = if i < max_rank - a.len() {
+            1
+        } else {
+            a[i - (max_rank - a.len())]
+        };
+        let db = if i < max_rank - b.len() {
+            1
+        } else {
+            b[i - (max_rank - b.len())]
+        };
+        out[i] = da.max(db);
+    }
+    Shape::from(out)
+}
+
+pub fn broadcast_pair_bytes(
+    a: &[u8],
+    a_dims: &[usize],
+    b: &[u8],
+    b_dims: &[usize],
+    elem_size: usize,
+) -> (Shape, Vec<u8>, Vec<u8>) {
+    let out_shape = broadcast_shape(a_dims, b_dims);
+    let a_out = if a_dims == out_shape.as_slice() {
+        a.to_vec()
+    } else {
+        expand_bytes(a, a_dims, &out_shape, elem_size)
+    };
+    let b_out = if b_dims == out_shape.as_slice() {
+        b.to_vec()
+    } else {
+        expand_bytes(b, b_dims, &out_shape, elem_size)
+    };
+    (out_shape, a_out, b_out)
+}
+
 fn apply_update_f32(dst: &mut f32, val: f32, op: burn_backend::tensor::IndexingUpdateOp) {
     use burn_backend::tensor::IndexingUpdateOp;
     match op {
