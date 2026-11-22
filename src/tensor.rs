@@ -1,5 +1,5 @@
 use crate::device::GnaDevice;
-use burn_backend::quantization::{QuantMode, QuantScheme, QuantStore, QuantValue, ScaleDtype};
+use burn_backend::quantization::QuantScheme;
 use burn_backend::{BoolStore, DType, FloatDType, IntDType, Shape, TensorMetadata};
 use std::sync::Arc;
 
@@ -154,11 +154,6 @@ impl TensorMetadata for GnaQTensorPrimitive {
 
 impl GnaQTensorPrimitive {
     pub fn default_scheme() -> QuantScheme {
-        // Intel GNA commonly operates with INT8 quantized representations
-        QuantScheme::default()
-            .with_value(QuantValue::Q8F)
-            .with_mode(QuantMode::Symmetric)
-            .per_tensor(ScaleDtype::F32)
-            .with_store(QuantStore::Native)
+        GnaDevice::default_quant_scheme()
     }
 }

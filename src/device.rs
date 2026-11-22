@@ -1,3 +1,4 @@
+use burn_backend::quantization::{QuantMode, QuantScheme, QuantStore, QuantValue, ScaleDtype};
 use burn_backend::{BoolStore, DType, Device, DeviceId, DeviceOps, DeviceSettings};
 use burn_std::QuantConfig;
 
@@ -34,6 +35,15 @@ impl GnaDevice {
     ) -> nanai_gna_dll_load::Result<nanai_gna_dll_load::GnaDevice> {
         nanai_gna_dll_load::GnaDevice::open(lib, device_index)
     }
+
+    /// Default quantization scheme for Intel GNA (symmetric INT8 with F32 scale).
+    pub fn default_quant_scheme() -> QuantScheme {
+        QuantScheme::default()
+            .with_value(QuantValue::Q8F)
+            .with_mode(QuantMode::Symmetric)
+            .per_tensor(ScaleDtype::F32)
+            .with_store(QuantStore::Native)
+    }
 }
 
 impl Device for GnaDevice {
@@ -55,10 +65,7 @@ impl DeviceOps for GnaDevice {
             DType::F32,
             DType::I32,
             DType::Bool(BoolStore::Native),
-            QuantConfig::new(
-                crate::tensor::GnaQTensorPrimitive::default_scheme(),
-                Default::default(),
-            ),
+            QuantConfig::new(Self::default_quant_scheme(), Default::default()),
         )
     }
 }
