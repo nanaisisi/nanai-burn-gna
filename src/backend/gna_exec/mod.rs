@@ -8,6 +8,7 @@ use crate::tensor::int::GnaIntTensorPrimitive;
 use crate::{GnaBackendError, GnaHwDevice, GnaLibrary, Result, ffi};
 
 pub mod extra;
+pub mod flash_attn;
 pub mod layout;
 pub mod module_ops;
 pub mod ops;

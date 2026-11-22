@@ -239,7 +239,7 @@ impl ModuleOps<Self> for GnaBackend {
         attn_bias: Option<GnaFloatTensorPrimitive>,
         options: AttentionModuleOptions,
     ) -> GnaFloatTensorPrimitive {
-        crate::backend::gna_exec::module_ops::execute_float_attention(
+        crate::backend::gna_exec::flash_attn::execute_flash_attention(
             query, key, value, mask, attn_bias, options,
         )
     }

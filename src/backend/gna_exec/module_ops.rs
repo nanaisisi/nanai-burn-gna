@@ -16,6 +16,7 @@ use crate::tensor::int::GnaIntTensorPrimitive;
 use crate::tensor::quantized::GnaQTensorPrimitive;
 
 /// Scaled dot-product attention using Intel GNA 3.0 hardware `matmul`.
+#[allow(dead_code)]
 pub fn execute_float_attention(
     query: GnaFloatTensorPrimitive,
     key: GnaFloatTensorPrimitive,
