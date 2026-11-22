@@ -10,6 +10,9 @@ pub struct GnaDevice {
 }
 
 impl GnaDevice {
+    /// Unique Burn device type identifier for Intel GNA (`'G'`, `'N'`).
+    pub const TYPE_ID: u16 = 0x474e;
+
     /// Create a new GNA device with the specified index.
     pub const fn new(index: u16) -> Self {
         Self { index }
@@ -56,8 +59,7 @@ impl Device for GnaDevice {
     }
 
     fn to_id(&self) -> DeviceId {
-        // Use a unique type_id for GNA device, e.g. 0x474e ('G', 'N')
-        DeviceId::new(0x474e, self.index)
+        DeviceId::new(Self::TYPE_ID, self.index)
     }
 }
 
@@ -81,7 +83,7 @@ mod tests {
     fn test_device_id_conversion() {
         let dev = GnaDevice { index: 1 };
         let id = dev.to_id();
-        assert_eq!(id.type_id, 0x474e);
+        assert_eq!(id.type_id, GnaDevice::TYPE_ID);
         assert_eq!(id.index_id, 1);
 
         let restored = GnaDevice::from_id(id);

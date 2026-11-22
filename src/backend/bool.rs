@@ -30,7 +30,7 @@ impl BoolTensorOps<Self> for GnaBackend {
     async fn bool_into_data(tensor: GnaBoolTensorPrimitive) -> Result<TensorData, ExecutionError> {
         let (shape, buffer) = tensor.into_parts();
         let data =
-            TensorData::from_bytes_vec(buffer.to_vec(), shape, DType::Bool(BoolStore::Native));
+            TensorData::from_bytes_vec(buffer.into_vec(), shape, DType::Bool(BoolStore::Native));
         Ok(data)
     }
 

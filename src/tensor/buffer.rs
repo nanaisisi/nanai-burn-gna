@@ -45,6 +45,13 @@ impl GnaBuffer {
         self.as_slice().to_vec()
     }
 
+    /// Consume the buffer and return its contents as a `Vec<u8>`, avoiding a copy when uniquely owned.
+    pub fn into_vec(self) -> Vec<u8> {
+        match self {
+            Self::Bytes(bytes) => Arc::unwrap_or_clone(bytes),
+        }
+    }
+
     /// Check if this buffer is uniquely owned and can be mutated in-place.
     pub fn can_mut(&self) -> bool {
         match self {

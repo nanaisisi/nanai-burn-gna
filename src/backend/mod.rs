@@ -64,8 +64,8 @@ impl Backend for GnaBackend {
 
     fn device_count(_type_id: u16) -> usize {
         // Check dynamically if GNA library is present, fallback to 0/1
-        if let Ok(lib) = nanai_gna_dll_load::GnaLibrary::load_default() {
-            nanai_gna_dll_load::GnaDevice::get_count(&lib).unwrap_or(0) as usize
+        if let Ok(lib) = crate::GnaLibrary::load_default() {
+            GnaDevice::get_count(&lib).unwrap_or(0) as usize
         } else {
             0
         }

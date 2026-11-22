@@ -33,7 +33,7 @@ pub(super) async fn float_into_data(
     tensor: GnaFloatTensorPrimitive,
 ) -> Result<TensorData, ExecutionError> {
     let (shape, dtype, buffer) = tensor.into_parts();
-    let data = TensorData::from_bytes_vec(buffer.to_vec(), shape, dtype.into());
+    let data = TensorData::from_bytes_vec(buffer.into_vec(), shape, dtype.into());
     Ok(data)
 }
 

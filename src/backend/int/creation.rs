@@ -18,7 +18,7 @@ pub(super) async fn int_into_data(
     tensor: GnaIntTensorPrimitive,
 ) -> Result<TensorData, ExecutionError> {
     let (shape, dtype, buffer) = tensor.into_parts();
-    let data = TensorData::from_bytes_vec(buffer.to_vec(), shape, dtype.into());
+    let data = TensorData::from_bytes_vec(buffer.into_vec(), shape, dtype.into());
     Ok(data)
 }
 
@@ -29,6 +29,10 @@ pub(super) fn int_from_data(data: TensorData, _device: &GnaDevice) -> GnaIntTens
         DType::I32 => IntDType::I32,
         DType::I16 => IntDType::I16,
         DType::I8 => IntDType::I8,
+        DType::U64 => IntDType::U64,
+        DType::U32 => IntDType::U32,
+        DType::U16 => IntDType::U16,
+        DType::U8 => IntDType::U8,
         _ => IntDType::I32,
     };
     GnaIntTensorPrimitive::new(

@@ -48,7 +48,7 @@ impl QTensorOps<Self> for GnaBackend {
 
     async fn q_into_data(tensor: GnaQTensorPrimitive) -> Result<TensorData, ExecutionError> {
         let (shape, scheme, buffer) = tensor.into_parts();
-        let data = TensorData::from_bytes_vec(buffer.to_vec(), shape, DType::QFloat(scheme));
+        let data = TensorData::from_bytes_vec(buffer.into_vec(), shape, DType::QFloat(scheme));
         Ok(data)
     }
 
