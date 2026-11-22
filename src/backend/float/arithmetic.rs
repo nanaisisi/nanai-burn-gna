@@ -3,44 +3,44 @@ use burn_backend::Scalar;
 
 pub(super) fn float_add(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: GnaFloatTensorPrimitive,
+    rhs: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::ops::execute_float_add_sub(lhs, rhs, 1)
 }
 
 pub(super) fn float_add_scalar(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::ops::execute_float_add_scalar(lhs, rhs, 1.0)
 }
 
 pub(super) fn float_sub(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: GnaFloatTensorPrimitive,
+    rhs: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::ops::execute_float_add_sub(lhs, rhs, -1)
 }
 
 pub(super) fn float_sub_scalar(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::ops::execute_float_add_scalar(lhs, rhs, -1.0)
 }
 
 pub(super) fn float_mul(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: GnaFloatTensorPrimitive,
+    rhs: GnaFloatTensorPrimitive,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::ops::execute_float_mul(lhs, rhs)
 }
 
 pub(super) fn float_mul_scalar(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::ops::execute_float_mul_scalar(lhs, rhs)
 }
 
 pub(super) fn float_div(

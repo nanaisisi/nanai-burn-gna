@@ -14,11 +14,11 @@ use burn_backend::{IntDType, TensorMetadata};
 impl ModuleOps<Self> for GnaBackend {
     fn conv2d(
         x: GnaFloatTensorPrimitive,
-        _weight: GnaFloatTensorPrimitive,
-        _bias: Option<GnaFloatTensorPrimitive>,
-        _options: ConvOptions<2>,
+        weight: GnaFloatTensorPrimitive,
+        bias: Option<GnaFloatTensorPrimitive>,
+        options: ConvOptions<2>,
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::ops::execute_float_conv2d(x, weight, bias, options)
     }
 
     fn deform_conv2d(

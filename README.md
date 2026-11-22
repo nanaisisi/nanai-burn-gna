@@ -57,7 +57,7 @@ Intel GNA を深層学習フレームワーク Burn 等から扱うためのロ�
 
 ```toml
 [dependencies]
-burn = "^0.21"
+burn = "^0.22.1"
 nanai-burn-gna = { path = "../nanai-burn-gna" } # または git リポジトリ
 ```
 
@@ -73,12 +73,14 @@ use nanai_burn_gna::{GnaBackend, GnaDevice};
 fn main() {
     let device = GnaDevice::default();
     
-    // Float Tensor
-    let tensor = Tensor::<GnaBackend, 2>::from_data([[1.0f32, 2.0], [3.0, 4.0]], &device);
-    println!("Shape: {:?}", tensor.shape());
-    
-    let data = tensor.into_data();
-    println!("Tensor data: {:?}", data);
+    // Float Tensor & GNA ハードウェア matmul
+    let a = Tensor::<GnaBackend, 2>::from_data([[1.0f32, 2.0, 3.0], [4.0, 5.0, 6.0]], &device);
+    let b = Tensor::<GnaBackend, 2>::from_data([[7.0f32, 8.0], [9.0, 1.0], [2.0, 3.0]], &device);
+    let c = a.matmul(b);
+    println!("Shape: {:?}", c.shape());
+
+    let data = c.into_data();
+    println!("Matmul result: {:?}", data);
 }
 ```
 

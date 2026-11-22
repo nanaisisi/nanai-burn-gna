@@ -3,35 +3,35 @@ use burn_backend::Scalar;
 
 pub(super) fn int_add(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::ops::execute_int_add_sub(lhs, rhs, 1)
 }
 
-pub(super) fn int_add_scalar(lhs: GnaIntTensorPrimitive, _rhs: Scalar) -> GnaIntTensorPrimitive {
-    lhs
+pub(super) fn int_add_scalar(lhs: GnaIntTensorPrimitive, rhs: Scalar) -> GnaIntTensorPrimitive {
+    crate::backend::gna_exec::ops::execute_int_add_scalar(lhs, rhs, 1)
 }
 
 pub(super) fn int_sub(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::ops::execute_int_add_sub(lhs, rhs, -1)
 }
 
-pub(super) fn int_sub_scalar(lhs: GnaIntTensorPrimitive, _rhs: Scalar) -> GnaIntTensorPrimitive {
-    lhs
+pub(super) fn int_sub_scalar(lhs: GnaIntTensorPrimitive, rhs: Scalar) -> GnaIntTensorPrimitive {
+    crate::backend::gna_exec::ops::execute_int_add_scalar(lhs, rhs, -1)
 }
 
 pub(super) fn int_mul(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::ops::execute_int_mul(lhs, rhs)
 }
 
-pub(super) fn int_mul_scalar(lhs: GnaIntTensorPrimitive, _rhs: Scalar) -> GnaIntTensorPrimitive {
-    lhs
+pub(super) fn int_mul_scalar(lhs: GnaIntTensorPrimitive, rhs: Scalar) -> GnaIntTensorPrimitive {
+    crate::backend::gna_exec::ops::execute_int_mul_scalar(lhs, rhs)
 }
 
 pub(super) fn int_div(

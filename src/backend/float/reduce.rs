@@ -3,21 +3,21 @@ use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::IntDType;
 
 pub(super) fn float_sum(tensor: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
-    tensor
+    crate::backend::gna_exec::ops::execute_float_sum(tensor)
 }
 
 pub(super) fn float_sum_dim(
     tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
+    dim: usize,
 ) -> GnaFloatTensorPrimitive {
-    tensor
+    crate::backend::gna_exec::ops::execute_float_sum_dim(tensor, dim, false)
 }
 
 pub(super) fn float_mean_dim(
     tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
+    dim: usize,
 ) -> GnaFloatTensorPrimitive {
-    tensor
+    crate::backend::gna_exec::ops::execute_float_sum_dim(tensor, dim, true)
 }
 
 pub(super) fn float_cumsum(

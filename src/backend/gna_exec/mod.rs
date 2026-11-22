@@ -7,6 +7,8 @@ use crate::tensor::float::GnaFloatTensorPrimitive;
 use crate::tensor::int::GnaIntTensorPrimitive;
 use crate::{GnaBackendError, GnaHwDevice, GnaLibrary, Result, ffi};
 
+pub mod ops;
+
 static GNA_EXEC_LOCK: Mutex<()> = Mutex::new(());
 static GNA_LIBRARY: OnceLock<Option<GnaLibrary>> = OnceLock::new();
 
@@ -19,10 +21,11 @@ const fn align_up(value: usize, align: usize) -> usize {
     value.div_ceil(align) * align
 }
 
-/// Execute `lhs [m, k] * rhs [k, n]` on Intel GNA hardware using `FullyConnectedAffine`.
-pub fn gna_matmul_i16(
+/// Execute `lhs [m, k] * rhs [k, n] (+ bias [n])` strictly on Intel GNA hardware.
+pub fn gna_affine_i16(
     lhs: &[i16],
     rhs: &[i16],
+    bias: Option<&[i32]>,
     m: usize,
     k: usize,
     n: usize,
@@ -65,6 +68,9 @@ pub fn gna_matmul_i16(
             for col in 0..n {
                 *weights_ptr.add(col * w_pad + row) = rhs[row * n + col];
             }
+        }
+        if let Some(b) = bias {
+            std::ptr::copy_nonoverlapping(b.as_ptr(), biases_ptr, n.min(b.len()));
         }
     }
 
@@ -126,7 +132,19 @@ pub fn gna_matmul_i16(
     Ok(result)
 }
 
-fn decode_ints(bytes: &[u8], dtype: IntDType) -> Vec<i64> {
+/// Execute `lhs [m, k] * rhs [k, n]` strictly on Intel GNA hardware.
+pub fn gna_matmul_i16(
+    lhs: &[i16],
+    rhs: &[i16],
+    m: usize,
+    k: usize,
+    n: usize,
+    device_index: u32,
+) -> Result<Vec<i32>> {
+    gna_affine_i16(lhs, rhs, None, m, k, n, device_index)
+}
+
+pub(crate) fn decode_ints(bytes: &[u8], dtype: IntDType) -> Vec<i64> {
     match dtype {
         IntDType::I8 => bytes.iter().map(|&b| (b as i8) as i64).collect(),
         IntDType::U8 => bytes.iter().map(|&b| b as i64).collect(),
@@ -169,7 +187,7 @@ fn decode_ints(bytes: &[u8], dtype: IntDType) -> Vec<i64> {
     }
 }
 
-fn encode_ints(values: &[i64], dtype: IntDType) -> Vec<u8> {
+pub(crate) fn encode_ints(values: &[i64], dtype: IntDType) -> Vec<u8> {
     match dtype {
         IntDType::I8 => values.iter().map(|&v| (v as i8) as u8).collect(),
         IntDType::U8 => values.iter().map(|&v| v as u8).collect(),
@@ -197,7 +215,7 @@ fn encode_ints(values: &[i64], dtype: IntDType) -> Vec<u8> {
     }
 }
 
-fn decode_floats(bytes: &[u8], dtype: FloatDType) -> Vec<f32> {
+pub(crate) fn decode_floats(bytes: &[u8], dtype: FloatDType) -> Vec<f32> {
     match dtype {
         FloatDType::F64 => bytes
             .as_chunks::<8>()
@@ -214,7 +232,7 @@ fn decode_floats(bytes: &[u8], dtype: FloatDType) -> Vec<f32> {
     }
 }
 
-fn encode_floats(values: &[f32], dtype: FloatDType) -> Vec<u8> {
+pub(crate) fn encode_floats(values: &[f32], dtype: FloatDType) -> Vec<u8> {
     match dtype {
         FloatDType::F64 => values
             .iter()

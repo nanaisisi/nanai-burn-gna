@@ -2,11 +2,11 @@ use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::IntDType;
 
 pub(super) fn int_sum(tensor: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
-    tensor
+    crate::backend::gna_exec::ops::execute_int_sum(tensor)
 }
 
-pub(super) fn int_sum_dim(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_sum_dim(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
+    crate::backend::gna_exec::ops::execute_int_sum_dim(tensor, dim, false)
 }
 
 pub(super) fn int_prod(tensor: GnaIntTensorPrimitive) -> GnaIntTensorPrimitive {
@@ -17,8 +17,8 @@ pub(super) fn int_prod_dim(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaInt
     tensor
 }
 
-pub(super) fn int_mean_dim(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_mean_dim(tensor: GnaIntTensorPrimitive, dim: usize) -> GnaIntTensorPrimitive {
+    crate::backend::gna_exec::ops::execute_int_sum_dim(tensor, dim, true)
 }
 
 pub(super) fn int_cumsum(tensor: GnaIntTensorPrimitive, _dim: usize) -> GnaIntTensorPrimitive {
