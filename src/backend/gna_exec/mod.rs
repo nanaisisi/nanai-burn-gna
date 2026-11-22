@@ -1,6 +1,6 @@
 use std::sync::{Mutex, OnceLock};
 
-use burn_backend::{FloatDType, IntDType, Shape, TensorMetadata};
+use burn_backend::{FloatDType, IntDType, Shape, TensorMetadata, bf16, f16};
 
 use crate::tensor::buffer::GnaBuffer;
 use crate::tensor::float::GnaFloatTensorPrimitive;
@@ -226,7 +226,19 @@ pub(crate) fn decode_floats(bytes: &[u8], dtype: FloatDType) -> Vec<f32> {
             .iter()
             .map(|&c| f64::from_le_bytes(c) as f32)
             .collect(),
-        _ => bytes
+        FloatDType::F16 => bytes
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|&c| f16::from_le_bytes(c).to_f32())
+            .collect(),
+        FloatDType::BF16 => bytes
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|&c| bf16::from_le_bytes(c).to_f32())
+            .collect(),
+        FloatDType::F32 | FloatDType::Flex32 => bytes
             .as_chunks::<4>()
             .0
             .iter()
@@ -241,7 +253,17 @@ pub(crate) fn encode_floats(values: &[f32], dtype: FloatDType) -> Vec<u8> {
             .iter()
             .flat_map(|&v| (v as f64).to_le_bytes())
             .collect(),
-        _ => values.iter().flat_map(|&v| v.to_le_bytes()).collect(),
+        FloatDType::F16 => values
+            .iter()
+            .flat_map(|&v| f16::from_f32(v).to_le_bytes())
+            .collect(),
+        FloatDType::BF16 => values
+            .iter()
+            .flat_map(|&v| bf16::from_f32(v).to_le_bytes())
+            .collect(),
+        FloatDType::F32 | FloatDType::Flex32 => {
+            values.iter().flat_map(|&v| v.to_le_bytes()).collect()
+        }
     }
 }
 
