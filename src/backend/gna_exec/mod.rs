@@ -15,6 +15,14 @@ pub mod ops;
 
 static GNA_EXEC_LOCK: Mutex<()> = Mutex::new(());
 static GNA_LIBRARY: OnceLock<Option<GnaLibrary>> = OnceLock::new();
+static LAST_PERF_STATS: Mutex<Option<ffi::GnaPerformanceStats>> = Mutex::new(None);
+
+pub fn last_performance_stats() -> Option<ffi::GnaPerformanceStats> {
+    LAST_PERF_STATS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
+}
 
 fn get_library() -> Result<&'static GnaLibrary> {
     let lib = GNA_LIBRARY.get_or_init(|| GnaLibrary::load_default().ok());
@@ -113,6 +121,7 @@ pub fn gna_affine_i16(
         request.set_operand_buffer(0, 1, outputs_ptr as _)?;
     }
     request.set_acceleration_mode(ffi::types::Gna2AccelerationMode::Hardware)?;
+    let _ = request.enable_performance_counter();
 
     let mut result = vec![0i32; m * n];
     for r in 0..m {
@@ -126,6 +135,10 @@ pub fn gna_affine_i16(
         unsafe {
             std::ptr::copy_nonoverlapping(outputs_ptr, result[r * n..].as_mut_ptr(), n);
         }
+    }
+
+    if let Ok(stats) = request.get_performance_stats() {
+        *LAST_PERF_STATS.lock().unwrap_or_else(|e| e.into_inner()) = Some(stats);
     }
 
     drop(request);

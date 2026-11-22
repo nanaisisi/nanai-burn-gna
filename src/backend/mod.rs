@@ -32,6 +32,13 @@ impl UnfoldParams {
 #[derive(Clone, Copy, Default, Debug)]
 pub struct GnaBackend;
 
+impl GnaBackend {
+    /// Return the hardware performance statistics from the most recent GNA execution.
+    pub fn last_performance_stats() -> Option<crate::ffi::GnaPerformanceStats> {
+        gna_exec::last_performance_stats()
+    }
+}
+
 impl BackendTypes for GnaBackend {
     type Device = GnaDevice;
     type FloatTensorPrimitive = GnaFloatTensorPrimitive;
