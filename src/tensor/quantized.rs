@@ -45,11 +45,6 @@ impl GnaQTensorPrimitive {
     pub fn with_shape(self, shape: Shape) -> Self {
         Self { shape, ..self }
     }
-
-    /// Return the default quantization scheme for GNA.
-    pub fn default_scheme() -> QuantScheme {
-        GnaDevice::default_quant_scheme()
-    }
 }
 
 impl TensorMetadata for GnaQTensorPrimitive {

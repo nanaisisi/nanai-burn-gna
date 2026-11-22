@@ -1,10 +1,16 @@
 pub mod backend;
 pub mod device;
+pub mod error;
 pub mod tensor;
 
 pub use backend::GnaBackend;
 pub use device::GnaDevice;
-pub use nanai_gna_dll_load::*;
+pub use error::{GnaBackendError, Result};
+pub use nanai_gna_dll_load as ffi;
+pub use nanai_gna_dll_load::{
+    Gna2DeviceVersion, GnaBuffer as GnaHwBuffer, GnaDevice as GnaHwDevice, GnaError as GnaFfiError,
+    GnaLibrary,
+};
 pub use tensor::{
     GnaBoolTensorPrimitive, GnaBuffer, GnaFloatTensorPrimitive, GnaIntTensorPrimitive,
     GnaQTensorPrimitive,

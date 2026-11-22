@@ -21,24 +21,21 @@ impl GnaDevice {
     }
 
     /// Get the count of available GNA hardware devices.
-    pub fn get_count(lib: &nanai_gna_dll_load::GnaLibrary) -> nanai_gna_dll_load::Result<u32> {
-        nanai_gna_dll_load::GnaDevice::get_count(lib)
+    pub fn get_count(lib: &crate::GnaLibrary) -> crate::Result<u32> {
+        Ok(crate::GnaHwDevice::get_count(lib)?)
     }
 
     /// Query the hardware version of a GNA device.
     pub fn get_version(
-        lib: &nanai_gna_dll_load::GnaLibrary,
+        lib: &crate::GnaLibrary,
         device_index: u32,
-    ) -> nanai_gna_dll_load::Result<nanai_gna_dll_load::Gna2DeviceVersion> {
-        nanai_gna_dll_load::GnaDevice::get_version(lib, device_index)
+    ) -> crate::Result<crate::Gna2DeviceVersion> {
+        Ok(crate::GnaHwDevice::get_version(lib, device_index)?)
     }
 
     /// Open a GNA device session.
-    pub fn open(
-        lib: &nanai_gna_dll_load::GnaLibrary,
-        device_index: u32,
-    ) -> nanai_gna_dll_load::Result<nanai_gna_dll_load::GnaDevice> {
-        nanai_gna_dll_load::GnaDevice::open(lib, device_index)
+    pub fn open(lib: &crate::GnaLibrary, device_index: u32) -> crate::Result<crate::GnaHwDevice> {
+        Ok(crate::GnaHwDevice::open(lib, device_index)?)
     }
 
     /// Default quantization scheme for Intel GNA (symmetric INT8 with F32 scale).

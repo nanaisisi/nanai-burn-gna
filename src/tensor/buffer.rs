@@ -23,11 +23,26 @@ impl GnaBuffer {
         Self::from_bytes(vec![value; len])
     }
 
+    /// Return the buffer contents as a byte slice.
+    pub fn as_slice(&self) -> &[u8] {
+        match self {
+            Self::Bytes(bytes) => bytes.as_slice(),
+        }
+    }
+
+    /// Return the byte length of the buffer.
+    pub fn len(&self) -> usize {
+        self.as_slice().len()
+    }
+
+    /// Return `true` if the buffer has zero bytes.
+    pub fn is_empty(&self) -> bool {
+        self.as_slice().is_empty()
+    }
+
     /// Copy the buffer contents into a `Vec<u8>`.
     pub fn to_vec(&self) -> Vec<u8> {
-        match self {
-            Self::Bytes(bytes) => bytes.as_slice().to_vec(),
-        }
+        self.as_slice().to_vec()
     }
 
     /// Check if this buffer is uniquely owned and can be mutated in-place.

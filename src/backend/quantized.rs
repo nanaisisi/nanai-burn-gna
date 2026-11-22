@@ -15,7 +15,7 @@ impl QTensorOps<Self> for GnaBackend {
     fn q_from_data(data: TensorData, _device: &GnaDevice) -> GnaQTensorPrimitive {
         let scheme = match data.dtype() {
             DType::QFloat(scheme) => scheme,
-            _ => GnaQTensorPrimitive::default_scheme(),
+            _ => GnaDevice::default_quant_scheme(),
         };
         GnaQTensorPrimitive::new(
             data.shape().clone(),
