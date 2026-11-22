@@ -1,6 +1,6 @@
-use burn::tensor::backend::QTensorPrimitive;
-use burn::tensor::quantization::{QuantMode, QuantParam, QuantScheme, QuantStore, QuantValue};
-use burn::tensor::{BoolStore, DType, FloatDType, IntDType, Shape, TensorMetadata};
+use crate::device::GnaDevice;
+use burn_backend::quantization::{QuantMode, QuantScheme, QuantStore, QuantValue, ScaleDtype};
+use burn_backend::{BoolStore, DType, FloatDType, IntDType, Shape, TensorMetadata};
 use std::sync::Arc;
 
 /// Underlying buffer representation for GNA tensor primitives.
@@ -19,12 +19,24 @@ pub struct GnaFloatTensorPrimitive {
 }
 
 impl TensorMetadata for GnaFloatTensorPrimitive {
+    type Device = GnaDevice;
+
     fn dtype(&self) -> DType {
         self.dtype.into()
     }
 
     fn shape(&self) -> Shape {
         self.shape.clone()
+    }
+
+    fn device(&self) -> Self::Device {
+        GnaDevice::default()
+    }
+
+    fn can_mut(&self) -> bool {
+        match &self.buffer {
+            GnaBuffer::Bytes(arc) => Arc::strong_count(arc) == 1,
+        }
     }
 }
 
@@ -37,12 +49,24 @@ pub struct GnaIntTensorPrimitive {
 }
 
 impl TensorMetadata for GnaIntTensorPrimitive {
+    type Device = GnaDevice;
+
     fn dtype(&self) -> DType {
         self.dtype.into()
     }
 
     fn shape(&self) -> Shape {
         self.shape.clone()
+    }
+
+    fn device(&self) -> Self::Device {
+        GnaDevice::default()
+    }
+
+    fn can_mut(&self) -> bool {
+        match &self.buffer {
+            GnaBuffer::Bytes(arc) => Arc::strong_count(arc) == 1,
+        }
     }
 }
 
@@ -54,12 +78,24 @@ pub struct GnaBoolTensorPrimitive {
 }
 
 impl TensorMetadata for GnaBoolTensorPrimitive {
+    type Device = GnaDevice;
+
     fn dtype(&self) -> DType {
         DType::Bool(BoolStore::Native)
     }
 
     fn shape(&self) -> Shape {
         self.shape.clone()
+    }
+
+    fn device(&self) -> Self::Device {
+        GnaDevice::default()
+    }
+
+    fn can_mut(&self) -> bool {
+        match &self.buffer {
+            GnaBuffer::Bytes(arc) => Arc::strong_count(arc) == 1,
+        }
     }
 }
 
@@ -72,6 +108,8 @@ pub struct GnaQTensorPrimitive {
 }
 
 impl TensorMetadata for GnaQTensorPrimitive {
+    type Device = GnaDevice;
+
     fn dtype(&self) -> DType {
         DType::QFloat(self.scheme)
     }
@@ -79,19 +117,25 @@ impl TensorMetadata for GnaQTensorPrimitive {
     fn shape(&self) -> Shape {
         self.shape.clone()
     }
-}
 
-impl QTensorPrimitive for GnaQTensorPrimitive {
-    fn scheme(&self) -> &QuantScheme {
-        &self.scheme
+    fn device(&self) -> Self::Device {
+        GnaDevice::default()
     }
 
-    fn default_scheme() -> QuantScheme {
+    fn can_mut(&self) -> bool {
+        match &self.buffer {
+            GnaBuffer::Bytes(arc) => Arc::strong_count(arc) == 1,
+        }
+    }
+}
+
+impl GnaQTensorPrimitive {
+    pub fn default_scheme() -> QuantScheme {
         // Intel GNA commonly operates with INT8 quantized representations
         QuantScheme::default()
             .with_value(QuantValue::Q8F)
             .with_mode(QuantMode::Symmetric)
-            .with_param(QuantParam::F32)
+            .per_tensor(ScaleDtype::F32)
             .with_store(QuantStore::Native)
     }
 }

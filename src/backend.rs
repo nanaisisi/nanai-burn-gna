@@ -2,16 +2,18 @@ use crate::device::GnaDevice;
 use crate::tensor::{
     GnaBoolTensorPrimitive, GnaFloatTensorPrimitive, GnaIntTensorPrimitive, GnaQTensorPrimitive,
 };
-use burn::tensor::backend::{Backend, BackendTypes, DTypeUsage, ExecutionError};
-use burn::tensor::ops::{
+use burn_backend::distributed::DistributedOps;
+use burn_backend::ops::{
     ActivationOps, AttentionModuleOptions, BoolTensorOps, ConvOptions, ConvTransposeOptions,
     DeformConv2dBackward, DeformConvOptions, FloatTensorOps, IntTensorOps, InterpolateOptions,
     MaxPool2dBackward, MaxPool2dWithIndices, ModuleOps, QTensorOps, TransactionOps,
     TransactionPrimitive, TransactionPrimitiveData,
 };
-use burn::tensor::quantization::{QuantScheme, QuantizationParametersPrimitive};
-use burn::tensor::{
-    BoolStore, DType, Distribution, FloatDType, IntDType, Scalar, Shape, Slice, TensorData,
+use burn_backend::quantization::{QuantScheme, QuantizationParametersPrimitive};
+use burn_backend::tensor::IndexingUpdateOp;
+use burn_backend::{
+    Backend, BackendTypes, BoolStore, DType, DTypeUsage, DTypeUsageSet, Distribution,
+    ExecutionError, FloatDType, GraphUnsupported, IntDType, Scalar, Shape, Slice, TensorData,
 };
 use enumset::{EnumSet, enum_set};
 
@@ -21,13 +23,11 @@ pub struct GnaBackend;
 
 impl BackendTypes for GnaBackend {
     type Device = GnaDevice;
-    type FloatElem = f32;
     type FloatTensorPrimitive = GnaFloatTensorPrimitive;
-    type IntElem = i32;
     type IntTensorPrimitive = GnaIntTensorPrimitive;
-    type BoolElem = bool;
     type BoolTensorPrimitive = GnaBoolTensorPrimitive;
     type QuantizedTensorPrimitive = GnaQTensorPrimitive;
+    type GraphPrimitive = GraphUnsupported;
 }
 
 impl Backend for GnaBackend {
@@ -39,7 +39,7 @@ impl Backend for GnaBackend {
         // GNA accelerator is deterministic inference device; seed is no-op
     }
 
-    fn dtype_usage(_device: &Self::Device, dtype: DType) -> EnumSet<DTypeUsage> {
+    fn dtype_usage(_device: &Self::Device, dtype: DType) -> DTypeUsageSet {
         match dtype {
             DType::QFloat(_) => enum_set!(DTypeUsage::Storage | DTypeUsage::Accelerated),
             DType::Bool(_) | DType::F32 | DType::I32 | DType::I16 | DType::I8 => {
@@ -61,7 +61,16 @@ impl Backend for GnaBackend {
     fn sync(_device: &Self::Device) -> Result<(), ExecutionError> {
         Ok(())
     }
+
+    fn flush(_device: &Self::Device) -> Result<(), ExecutionError> {
+        Ok(())
+    }
 }
+
+// ---------------------------------------------------------------------------
+// DistributedOps
+// ---------------------------------------------------------------------------
+impl DistributedOps<Self> for GnaBackend {}
 
 // ---------------------------------------------------------------------------
 // ActivationOps
@@ -86,8 +95,8 @@ impl TransactionOps<Self> for GnaBackend {
 // ---------------------------------------------------------------------------
 impl FloatTensorOps<Self> for GnaBackend {
     fn float_from_data(data: TensorData, _device: &GnaDevice) -> GnaFloatTensorPrimitive {
-        let shape = data.shape.clone();
-        let dtype = match data.dtype {
+        let shape = data.shape().clone();
+        let dtype = match data.dtype() {
             DType::F64 => FloatDType::F64,
             DType::F32 => FloatDType::F32,
             DType::F16 => FloatDType::F16,
@@ -125,10 +134,6 @@ impl FloatTensorOps<Self> for GnaBackend {
                 Ok(data)
             }
         }
-    }
-
-    fn float_device(_tensor: &GnaFloatTensorPrimitive) -> GnaDevice {
-        GnaDevice::default()
     }
 
     fn float_to_device(
@@ -269,11 +274,12 @@ impl FloatTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn float_scatter_add(
+    fn float_scatter(
         _dim: usize,
         tensor: GnaFloatTensorPrimitive,
         _indices: GnaIntTensorPrimitive,
         _value: GnaFloatTensorPrimitive,
+        _update: IndexingUpdateOp,
     ) -> GnaFloatTensorPrimitive {
         tensor
     }
@@ -286,11 +292,12 @@ impl FloatTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn float_select_add(
+    fn float_select_assign(
         tensor: GnaFloatTensorPrimitive,
         _dim: usize,
         _indices: GnaIntTensorPrimitive,
         _value: GnaFloatTensorPrimitive,
+        _update: IndexingUpdateOp,
     ) -> GnaFloatTensorPrimitive {
         tensor
     }
@@ -664,7 +671,7 @@ impl BoolTensorOps<Self> for GnaBackend {
 
     fn bool_from_data(data: TensorData, _device: &GnaDevice) -> GnaBoolTensorPrimitive {
         GnaBoolTensorPrimitive {
-            shape: data.shape.clone(),
+            shape: data.shape().clone(),
             buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(
                 data.into_bytes().to_vec(),
             )),
@@ -688,10 +695,6 @@ impl BoolTensorOps<Self> for GnaBackend {
             dtype: out_dtype,
             buffer: tensor.buffer,
         }
-    }
-
-    fn bool_device(_tensor: &GnaBoolTensorPrimitive) -> GnaDevice {
-        GnaDevice::default()
     }
 
     fn bool_to_device(
@@ -857,8 +860,8 @@ impl IntTensorOps<Self> for GnaBackend {
     }
 
     fn int_from_data(data: TensorData, _device: &GnaDevice) -> GnaIntTensorPrimitive {
-        let shape = data.shape.clone();
-        let dtype = match data.dtype {
+        let shape = data.shape().clone();
+        let dtype = match data.dtype() {
             DType::I64 => IntDType::I64,
             DType::I32 => IntDType::I32,
             DType::I16 => IntDType::I16,
@@ -872,10 +875,6 @@ impl IntTensorOps<Self> for GnaBackend {
                 data.into_bytes().to_vec(),
             )),
         }
-    }
-
-    fn int_device(_tensor: &GnaIntTensorPrimitive) -> GnaDevice {
-        GnaDevice::default()
     }
 
     fn int_to_device(tensor: GnaIntTensorPrimitive, _device: &GnaDevice) -> GnaIntTensorPrimitive {
@@ -933,11 +932,12 @@ impl IntTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn int_scatter_add(
+    fn int_scatter(
         _dim: usize,
         tensor: GnaIntTensorPrimitive,
         _indices: GnaIntTensorPrimitive,
         _value: GnaIntTensorPrimitive,
+        _update: IndexingUpdateOp,
     ) -> GnaIntTensorPrimitive {
         tensor
     }
@@ -950,11 +950,12 @@ impl IntTensorOps<Self> for GnaBackend {
         tensor
     }
 
-    fn int_select_add(
+    fn int_select_assign(
         tensor: GnaIntTensorPrimitive,
         _dim: usize,
         _indices: GnaIntTensorPrimitive,
         _value: GnaIntTensorPrimitive,
+        _update: IndexingUpdateOp,
     ) -> GnaIntTensorPrimitive {
         tensor
     }
@@ -1293,12 +1294,12 @@ impl IntTensorOps<Self> for GnaBackend {
 // ---------------------------------------------------------------------------
 impl QTensorOps<Self> for GnaBackend {
     fn q_from_data(data: TensorData, _device: &GnaDevice) -> GnaQTensorPrimitive {
-        let scheme = match data.dtype {
+        let scheme = match data.dtype() {
             DType::QFloat(scheme) => scheme,
-            _ => <GnaQTensorPrimitive as burn::tensor::backend::QTensorPrimitive>::default_scheme(),
+            _ => GnaQTensorPrimitive::default_scheme(),
         };
         GnaQTensorPrimitive {
-            shape: data.shape.clone(),
+            shape: data.shape().clone(),
             scheme,
             buffer: crate::tensor::GnaBuffer::Bytes(std::sync::Arc::new(
                 data.into_bytes().to_vec(),
@@ -1324,10 +1325,6 @@ impl QTensorOps<Self> for GnaBackend {
             dtype,
             buffer: tensor.buffer,
         }
-    }
-
-    fn q_device(_tensor: &GnaQTensorPrimitive) -> GnaDevice {
-        GnaDevice::default()
     }
 
     fn q_to_device(tensor: GnaQTensorPrimitive, _device: &GnaDevice) -> GnaQTensorPrimitive {
@@ -1480,6 +1477,20 @@ impl ModuleOps<Self> for GnaBackend {
         unimplemented!("backward pass is not supported on GNA inference accelerator")
     }
 
+    fn adaptive_avg_pool3d(
+        x: GnaFloatTensorPrimitive,
+        _output_size: [usize; 3],
+    ) -> GnaFloatTensorPrimitive {
+        x
+    }
+
+    fn adaptive_avg_pool3d_backward(
+        _x: GnaFloatTensorPrimitive,
+        _grad: GnaFloatTensorPrimitive,
+    ) -> GnaFloatTensorPrimitive {
+        unimplemented!("backward pass is not supported on GNA inference accelerator")
+    }
+
     fn max_pool2d(
         x: GnaFloatTensorPrimitive,
         _kernel_size: [usize; 2],
@@ -1498,10 +1509,11 @@ impl ModuleOps<Self> for GnaBackend {
         _padding: [usize; 2],
         _dilation: [usize; 2],
         _ceil_mode: bool,
+        indices_dtype: IntDType,
     ) -> MaxPool2dWithIndices<Self> {
         let indices = GnaIntTensorPrimitive {
             shape: x.shape.clone(),
-            dtype: IntDType::I32,
+            dtype: indices_dtype,
             buffer: x.buffer.clone(),
         };
         MaxPool2dWithIndices::new(x, indices)
@@ -1546,22 +1558,5 @@ impl ModuleOps<Self> for GnaBackend {
         _options: AttentionModuleOptions,
     ) -> GnaFloatTensorPrimitive {
         query
-    }
-
-    fn rfft(
-        signal: GnaFloatTensorPrimitive,
-        _dim: usize,
-        _n: Option<usize>,
-    ) -> (GnaFloatTensorPrimitive, GnaFloatTensorPrimitive) {
-        (signal.clone(), signal)
-    }
-
-    fn irfft(
-        spectrum_re: GnaFloatTensorPrimitive,
-        _spectrum_im: GnaFloatTensorPrimitive,
-        _dim: usize,
-        _n: Option<usize>,
-    ) -> GnaFloatTensorPrimitive {
-        spectrum_re
     }
 }

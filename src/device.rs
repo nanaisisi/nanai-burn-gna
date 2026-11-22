@@ -1,4 +1,5 @@
-use burn::tensor::backend::{DeviceId, DeviceOps};
+use burn::tensor::quantization::QuantConfig;
+use burn_backend::{BoolStore, DType, Device, DeviceId, DeviceOps, DeviceSettings};
 
 /// Intel GNA device representation for Burn.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
@@ -35,7 +36,7 @@ impl GnaDevice {
     }
 }
 
-impl burn::tensor::backend::Device for GnaDevice {
+impl Device for GnaDevice {
     fn from_id(device_id: DeviceId) -> Self {
         Self {
             index: device_id.index_id,
@@ -49,19 +50,23 @@ impl burn::tensor::backend::Device for GnaDevice {
 }
 
 impl DeviceOps for GnaDevice {
-    fn id(&self) -> DeviceId {
-        burn::tensor::backend::Device::to_id(self)
-    }
-
-    fn inner(&self) -> &Self {
-        self
+    fn defaults(&self) -> DeviceSettings {
+        DeviceSettings::new(
+            DType::F32,
+            DType::I32,
+            DType::Bool(BoolStore::Native),
+            QuantConfig::new(
+                crate::tensor::GnaQTensorPrimitive::default_scheme(),
+                Default::default(),
+            ),
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use burn::tensor::backend::Device;
+    use burn_backend::Device;
 
     #[test]
     fn test_device_id_conversion() {
