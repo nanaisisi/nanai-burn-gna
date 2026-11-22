@@ -7,6 +7,7 @@ use crate::tensor::float::GnaFloatTensorPrimitive;
 use crate::tensor::int::GnaIntTensorPrimitive;
 use crate::{GnaBackendError, GnaHwDevice, GnaLibrary, Result, ffi};
 
+pub mod layout;
 pub mod ops;
 
 static GNA_EXEC_LOCK: Mutex<()> = Mutex::new(());

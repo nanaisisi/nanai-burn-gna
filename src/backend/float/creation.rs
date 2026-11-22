@@ -48,8 +48,7 @@ pub(super) fn float_into_int(
     tensor: GnaFloatTensorPrimitive,
     out_dtype: IntDType,
 ) -> GnaIntTensorPrimitive {
-    let (shape, _dtype, buffer) = tensor.into_parts();
-    GnaIntTensorPrimitive::new(shape, out_dtype, buffer)
+    crate::backend::gna_exec::layout::convert_float_to_int(tensor, out_dtype)
 }
 
 pub(super) fn float_empty(
@@ -77,7 +76,15 @@ pub(super) fn float_expand(
     tensor: GnaFloatTensorPrimitive,
     shape: Shape,
 ) -> GnaFloatTensorPrimitive {
-    tensor.with_shape(shape)
+    use burn_backend::TensorMetadata;
+    let elem_size = DType::from(tensor.dtype()).size();
+    let out_bytes = crate::backend::gna_exec::layout::expand_bytes(
+        tensor.buffer().as_slice(),
+        &tensor.shape(),
+        &shape,
+        elem_size,
+    );
+    GnaFloatTensorPrimitive::new(shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }
 
 pub(super) fn float_reshape(

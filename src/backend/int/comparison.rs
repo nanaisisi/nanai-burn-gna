@@ -1,88 +1,84 @@
+use crate::backend::gna_exec::layout::{CmpOp, compare_int, compare_int_elem};
 use crate::tensor::bool::GnaBoolTensorPrimitive;
 use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::{BoolStore, Scalar};
 
-fn into_bool(tensor: GnaIntTensorPrimitive) -> GnaBoolTensorPrimitive {
-    let (shape, _dtype, buffer) = tensor.into_parts();
-    GnaBoolTensorPrimitive::new(shape, buffer)
-}
-
 pub(super) fn int_equal(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int(lhs, rhs, CmpOp::Equal)
 }
 
 pub(super) fn int_equal_elem(
     lhs: GnaIntTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int_elem(lhs, rhs, CmpOp::Equal)
 }
 
 pub(super) fn int_greater(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int(lhs, rhs, CmpOp::Greater)
 }
 
 pub(super) fn int_greater_elem(
     lhs: GnaIntTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int_elem(lhs, rhs, CmpOp::Greater)
 }
 
 pub(super) fn int_greater_equal(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int(lhs, rhs, CmpOp::GreaterEqual)
 }
 
 pub(super) fn int_greater_equal_elem(
     lhs: GnaIntTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int_elem(lhs, rhs, CmpOp::GreaterEqual)
 }
 
 pub(super) fn int_lower(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int(lhs, rhs, CmpOp::Lower)
 }
 
 pub(super) fn int_lower_elem(
     lhs: GnaIntTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int_elem(lhs, rhs, CmpOp::Lower)
 }
 
 pub(super) fn int_lower_equal(
     lhs: GnaIntTensorPrimitive,
-    _rhs: GnaIntTensorPrimitive,
+    rhs: GnaIntTensorPrimitive,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int(lhs, rhs, CmpOp::LowerEqual)
 }
 
 pub(super) fn int_lower_equal_elem(
     lhs: GnaIntTensorPrimitive,
-    _rhs: Scalar,
+    rhs: Scalar,
     _out_dtype: BoolStore,
 ) -> GnaBoolTensorPrimitive {
-    into_bool(lhs)
+    compare_int_elem(lhs, rhs, CmpOp::LowerEqual)
 }

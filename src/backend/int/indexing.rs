@@ -1,43 +1,98 @@
 use crate::backend::UnfoldParams;
+use crate::backend::gna_exec::decode_ints;
+use crate::backend::gna_exec::layout;
 use crate::tensor::bool::GnaBoolTensorPrimitive;
+use crate::tensor::buffer::GnaBuffer;
 use crate::tensor::int::GnaIntTensorPrimitive;
 use burn_backend::tensor::IndexingUpdateOp;
-use burn_backend::{Scalar, Slice};
+use burn_backend::{DType, Scalar, Slice, TensorMetadata};
 
-pub(super) fn int_slice(tensor: GnaIntTensorPrimitive, _slices: &[Slice]) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_slice(tensor: GnaIntTensorPrimitive, slices: &[Slice]) -> GnaIntTensorPrimitive {
+    let elem_size = DType::from(tensor.dtype()).size();
+    let (out_shape, out_bytes) = layout::slice_bytes(
+        tensor.buffer().as_slice(),
+        &tensor.shape(),
+        slices,
+        elem_size,
+    );
+    GnaIntTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }
 
 pub(super) fn int_slice_assign(
     tensor: GnaIntTensorPrimitive,
-    _slices: &[Slice],
-    _value: GnaIntTensorPrimitive,
+    slices: &[Slice],
+    value: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    tensor
+    let elem_size = DType::from(tensor.dtype()).size();
+    let out_bytes = layout::slice_assign_bytes(
+        tensor.buffer().as_slice(),
+        &tensor.shape(),
+        slices,
+        value.buffer().as_slice(),
+        elem_size,
+    );
+    GnaIntTensorPrimitive::new(
+        tensor.shape(),
+        tensor.dtype(),
+        GnaBuffer::from_bytes(out_bytes),
+    )
 }
 
 pub(super) fn int_mask_where(
     tensor: GnaIntTensorPrimitive,
-    _mask: GnaBoolTensorPrimitive,
-    _value: GnaIntTensorPrimitive,
+    mask: GnaBoolTensorPrimitive,
+    value: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    tensor
+    let elem_size = DType::from(tensor.dtype()).size();
+    let out_bytes = layout::mask_where_bytes(
+        tensor.buffer().as_slice(),
+        mask.buffer().as_slice(),
+        value.buffer().as_slice(),
+        elem_size,
+    );
+    GnaIntTensorPrimitive::new(
+        tensor.shape(),
+        tensor.dtype(),
+        GnaBuffer::from_bytes(out_bytes),
+    )
 }
 
 pub(super) fn int_mask_fill(
     tensor: GnaIntTensorPrimitive,
-    _mask: GnaBoolTensorPrimitive,
-    _value: Scalar,
+    mask: GnaBoolTensorPrimitive,
+    value: Scalar,
 ) -> GnaIntTensorPrimitive {
-    tensor
+    let elem_size = DType::from(tensor.dtype()).size();
+    let fill = layout::int_scalar_to_le_bytes(value, elem_size);
+    let out_bytes = layout::mask_fill_bytes(
+        tensor.buffer().as_slice(),
+        mask.buffer().as_slice(),
+        &fill,
+        elem_size,
+    );
+    GnaIntTensorPrimitive::new(
+        tensor.shape(),
+        tensor.dtype(),
+        GnaBuffer::from_bytes(out_bytes),
+    )
 }
 
 pub(super) fn int_gather(
-    _dim: usize,
+    dim: usize,
     tensor: GnaIntTensorPrimitive,
-    _indices: GnaIntTensorPrimitive,
+    indices: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    tensor
+    let elem_size = DType::from(tensor.dtype()).size();
+    let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
+    let (out_shape, out_bytes) = layout::gather_bytes(
+        dim,
+        tensor.buffer().as_slice(),
+        &tensor.shape(),
+        &idx_vals,
+        &indices.shape(),
+        elem_size,
+    );
+    GnaIntTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }
 
 pub(super) fn int_scatter(
@@ -52,10 +107,19 @@ pub(super) fn int_scatter(
 
 pub(super) fn int_select(
     tensor: GnaIntTensorPrimitive,
-    _dim: usize,
-    _indices: GnaIntTensorPrimitive,
+    dim: usize,
+    indices: GnaIntTensorPrimitive,
 ) -> GnaIntTensorPrimitive {
-    tensor
+    let elem_size = DType::from(tensor.dtype()).size();
+    let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
+    let (out_shape, out_bytes) = layout::select_bytes(
+        tensor.buffer().as_slice(),
+        &tensor.shape(),
+        dim,
+        &idx_vals,
+        elem_size,
+    );
+    GnaIntTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }
 
 pub(super) fn int_select_assign(
@@ -70,18 +134,36 @@ pub(super) fn int_select_assign(
 
 pub(super) fn int_swap_dims(
     tensor: GnaIntTensorPrimitive,
-    _dim1: usize,
-    _dim2: usize,
+    dim1: usize,
+    dim2: usize,
 ) -> GnaIntTensorPrimitive {
-    tensor
+    let elem_size = DType::from(tensor.dtype()).size();
+    let (out_shape, out_bytes) = layout::swap_dims_bytes(
+        tensor.buffer().as_slice(),
+        &tensor.shape(),
+        dim1,
+        dim2,
+        elem_size,
+    );
+    GnaIntTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }
 
-pub(super) fn int_permute(tensor: GnaIntTensorPrimitive, _axes: &[usize]) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_permute(tensor: GnaIntTensorPrimitive, axes: &[usize]) -> GnaIntTensorPrimitive {
+    let elem_size = DType::from(tensor.dtype()).size();
+    let (out_shape, out_bytes) =
+        layout::permute_bytes(tensor.buffer().as_slice(), &tensor.shape(), axes, elem_size);
+    GnaIntTensorPrimitive::new(out_shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }
 
-pub(super) fn int_flip(tensor: GnaIntTensorPrimitive, _axes: &[usize]) -> GnaIntTensorPrimitive {
-    tensor
+pub(super) fn int_flip(tensor: GnaIntTensorPrimitive, axes: &[usize]) -> GnaIntTensorPrimitive {
+    let elem_size = DType::from(tensor.dtype()).size();
+    let out_bytes =
+        layout::flip_bytes(tensor.buffer().as_slice(), &tensor.shape(), axes, elem_size);
+    GnaIntTensorPrimitive::new(
+        tensor.shape(),
+        tensor.dtype(),
+        GnaBuffer::from_bytes(out_bytes),
+    )
 }
 
 pub(super) fn int_unfold(

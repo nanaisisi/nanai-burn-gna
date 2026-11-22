@@ -57,8 +57,7 @@ pub(super) fn int_into_float(
     tensor: GnaIntTensorPrimitive,
     out_dtype: FloatDType,
 ) -> GnaFloatTensorPrimitive {
-    let (shape, _dtype, buffer) = tensor.into_parts();
-    GnaFloatTensorPrimitive::new(shape, out_dtype, buffer)
+    crate::backend::gna_exec::layout::convert_int_to_float(tensor, out_dtype)
 }
 
 pub(super) fn int_random(
@@ -71,7 +70,15 @@ pub(super) fn int_random(
 }
 
 pub(super) fn int_expand(tensor: GnaIntTensorPrimitive, shape: Shape) -> GnaIntTensorPrimitive {
-    tensor.with_shape(shape)
+    use burn_backend::TensorMetadata;
+    let elem_size = DType::from(tensor.dtype()).size();
+    let out_bytes = crate::backend::gna_exec::layout::expand_bytes(
+        tensor.buffer().as_slice(),
+        &tensor.shape(),
+        &shape,
+        elem_size,
+    );
+    GnaIntTensorPrimitive::new(shape, tensor.dtype(), GnaBuffer::from_bytes(out_bytes))
 }
 
 pub(super) fn int_cast(tensor: GnaIntTensorPrimitive, dtype: IntDType) -> GnaIntTensorPrimitive {
