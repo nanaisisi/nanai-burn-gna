@@ -23,13 +23,15 @@ impl ModuleOps<Self> for GnaBackend {
 
     fn deform_conv2d(
         x: GnaFloatTensorPrimitive,
-        _offset: GnaFloatTensorPrimitive,
-        _weight: GnaFloatTensorPrimitive,
-        _mask: Option<GnaFloatTensorPrimitive>,
-        _bias: Option<GnaFloatTensorPrimitive>,
-        _options: DeformConvOptions<2>,
+        offset: GnaFloatTensorPrimitive,
+        weight: GnaFloatTensorPrimitive,
+        mask: Option<GnaFloatTensorPrimitive>,
+        bias: Option<GnaFloatTensorPrimitive>,
+        options: DeformConvOptions<2>,
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::module_ops::execute_float_deform_conv2d(
+            x, offset, weight, mask, bias, options,
+        )
     }
 
     fn deform_conv2d_backward(
@@ -46,29 +48,33 @@ impl ModuleOps<Self> for GnaBackend {
 
     fn conv3d(
         x: GnaFloatTensorPrimitive,
-        _weight: GnaFloatTensorPrimitive,
-        _bias: Option<GnaFloatTensorPrimitive>,
-        _options: ConvOptions<3>,
+        weight: GnaFloatTensorPrimitive,
+        bias: Option<GnaFloatTensorPrimitive>,
+        options: ConvOptions<3>,
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::module_ops::execute_float_conv3d(x, weight, bias, options)
     }
 
     fn conv_transpose2d(
         x: GnaFloatTensorPrimitive,
-        _weight: GnaFloatTensorPrimitive,
-        _bias: Option<GnaFloatTensorPrimitive>,
-        _options: ConvTransposeOptions<2>,
+        weight: GnaFloatTensorPrimitive,
+        bias: Option<GnaFloatTensorPrimitive>,
+        options: ConvTransposeOptions<2>,
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::module_ops::execute_float_conv_transpose2d(
+            x, weight, bias, options,
+        )
     }
 
     fn conv_transpose3d(
         x: GnaFloatTensorPrimitive,
-        _weight: GnaFloatTensorPrimitive,
-        _bias: Option<GnaFloatTensorPrimitive>,
-        _options: ConvTransposeOptions<3>,
+        weight: GnaFloatTensorPrimitive,
+        bias: Option<GnaFloatTensorPrimitive>,
+        options: ConvTransposeOptions<3>,
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::module_ops::execute_float_conv_transpose3d(
+            x, weight, bias, options,
+        )
     }
 
     fn avg_pool2d(
@@ -117,9 +123,9 @@ impl ModuleOps<Self> for GnaBackend {
 
     fn adaptive_avg_pool3d(
         x: GnaFloatTensorPrimitive,
-        _output_size: [usize; 3],
+        output_size: [usize; 3],
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::module_ops::execute_float_adaptive_avg_pool3d(x, output_size)
     }
 
     fn adaptive_avg_pool3d_backward(
@@ -185,10 +191,10 @@ impl ModuleOps<Self> for GnaBackend {
 
     fn interpolate(
         x: GnaFloatTensorPrimitive,
-        _output_size: [usize; 2],
-        _options: InterpolateOptions,
+        output_size: [usize; 2],
+        options: InterpolateOptions,
     ) -> GnaFloatTensorPrimitive {
-        x
+        crate::backend::gna_exec::module_ops::execute_float_interpolate(x, output_size, options)
     }
 
     fn interpolate_backward(
@@ -202,12 +208,14 @@ impl ModuleOps<Self> for GnaBackend {
 
     fn attention(
         query: GnaFloatTensorPrimitive,
-        _key: GnaFloatTensorPrimitive,
-        _value: GnaFloatTensorPrimitive,
-        _mask: Option<GnaBoolTensorPrimitive>,
-        _attn_bias: Option<GnaFloatTensorPrimitive>,
-        _options: AttentionModuleOptions,
+        key: GnaFloatTensorPrimitive,
+        value: GnaFloatTensorPrimitive,
+        mask: Option<GnaBoolTensorPrimitive>,
+        attn_bias: Option<GnaFloatTensorPrimitive>,
+        options: AttentionModuleOptions,
     ) -> GnaFloatTensorPrimitive {
-        query
+        crate::backend::gna_exec::module_ops::execute_float_attention(
+            query, key, value, mask, attn_bias, options,
+        )
     }
 }

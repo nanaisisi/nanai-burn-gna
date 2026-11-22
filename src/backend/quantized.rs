@@ -27,15 +27,13 @@ impl QTensorOps<Self> for GnaBackend {
     fn quantize(
         tensor: GnaFloatTensorPrimitive,
         scheme: &QuantScheme,
-        _qparams: QuantizationParametersPrimitive<Self>,
+        qparams: QuantizationParametersPrimitive<Self>,
     ) -> GnaQTensorPrimitive {
-        let (shape, _dtype, buffer) = tensor.into_parts();
-        GnaQTensorPrimitive::new(shape, *scheme, buffer)
+        super::gna_exec::module_ops::execute_quantize(tensor, scheme, qparams)
     }
 
     fn dequantize(tensor: GnaQTensorPrimitive, dtype: FloatDType) -> GnaFloatTensorPrimitive {
-        let (shape, _scheme, buffer) = tensor.into_parts();
-        GnaFloatTensorPrimitive::new(shape, dtype, buffer)
+        super::gna_exec::module_ops::execute_dequantize(tensor, dtype)
     }
 
     fn q_to_device(tensor: GnaQTensorPrimitive, _device: &GnaDevice) -> GnaQTensorPrimitive {
@@ -53,30 +51,49 @@ impl QTensorOps<Self> for GnaBackend {
     }
 
     fn q_expand(tensor: GnaQTensorPrimitive, shape: Shape) -> GnaQTensorPrimitive {
-        tensor.with_shape(shape)
+        super::gna_exec::module_ops::transform_q_bytes(
+            tensor,
+            super::gna_exec::module_ops::QLayoutOp::Expand(shape),
+        )
     }
 
-    fn q_swap_dims(tensor: GnaQTensorPrimitive, _dim1: usize, _dim2: usize) -> GnaQTensorPrimitive {
-        tensor
+    fn q_swap_dims(tensor: GnaQTensorPrimitive, dim1: usize, dim2: usize) -> GnaQTensorPrimitive {
+        super::gna_exec::module_ops::transform_q_bytes(
+            tensor,
+            super::gna_exec::module_ops::QLayoutOp::SwapDims(dim1, dim2),
+        )
     }
 
-    fn q_permute(tensor: GnaQTensorPrimitive, _axes: &[usize]) -> GnaQTensorPrimitive {
-        tensor
+    fn q_permute(tensor: GnaQTensorPrimitive, axes: &[usize]) -> GnaQTensorPrimitive {
+        super::gna_exec::module_ops::transform_q_bytes(
+            tensor,
+            super::gna_exec::module_ops::QLayoutOp::Permute(axes),
+        )
     }
 
-    fn q_flip(tensor: GnaQTensorPrimitive, _axes: &[usize]) -> GnaQTensorPrimitive {
-        tensor
+    fn q_flip(tensor: GnaQTensorPrimitive, axes: &[usize]) -> GnaQTensorPrimitive {
+        super::gna_exec::module_ops::transform_q_bytes(
+            tensor,
+            super::gna_exec::module_ops::QLayoutOp::Flip(axes),
+        )
     }
 
     fn q_select(
         tensor: GnaQTensorPrimitive,
-        _dim: usize,
-        _indices: GnaIntTensorPrimitive,
+        dim: usize,
+        indices: GnaIntTensorPrimitive,
     ) -> GnaQTensorPrimitive {
-        tensor
+        let idx = super::gna_exec::decode_ints(indices.buffer().as_slice(), indices.dtype());
+        super::gna_exec::module_ops::transform_q_bytes(
+            tensor,
+            super::gna_exec::module_ops::QLayoutOp::Select(dim, &idx),
+        )
     }
 
-    fn q_slice(tensor: GnaQTensorPrimitive, _slices: &[Slice]) -> GnaQTensorPrimitive {
-        tensor
+    fn q_slice(tensor: GnaQTensorPrimitive, slices: &[Slice]) -> GnaQTensorPrimitive {
+        super::gna_exec::module_ops::transform_q_bytes(
+            tensor,
+            super::gna_exec::module_ops::QLayoutOp::Slice(slices),
+        )
     }
 }

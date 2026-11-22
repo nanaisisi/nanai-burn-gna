@@ -549,3 +549,36 @@ pub fn map_int_scalar(
     let s = rhs.elem::<i64>();
     map_int_unary(lhs, |v| f(v, s))
 }
+
+pub fn execute_float_cross(
+    lhs: GnaFloatTensorPrimitive,
+    rhs: GnaFloatTensorPrimitive,
+    dim: usize,
+) -> GnaFloatTensorPrimitive {
+    let shape = lhs.shape();
+    let dims: &[usize] = &shape;
+    let dtype = lhs.dtype();
+    let l = decode_floats(lhs.buffer().as_slice(), dtype);
+    let r = decode_floats(rhs.buffer().as_slice(), rhs.dtype());
+    let outer: usize = dims[..dim].iter().product();
+    let inner: usize = dims[dim + 1..].iter().product();
+    let mut out = vec![0.0f32; l.len()];
+
+    for o in 0..outer {
+        for i in 0..inner {
+            let idx0 = (o * 3) * inner + i;
+            let idx1 = (o * 3 + 1) * inner + i;
+            let idx2 = (o * 3 + 2) * inner + i;
+            let (a0, a1, a2) = (l[idx0], l[idx1], l[idx2]);
+            let (b0, b1, b2) = (r[idx0], r[idx1], r[idx2]);
+            out[idx0] = a1 * b2 - a2 * b1;
+            out[idx1] = a2 * b0 - a0 * b2;
+            out[idx2] = a0 * b1 - a1 * b0;
+        }
+    }
+    GnaFloatTensorPrimitive::new(
+        shape,
+        dtype,
+        GnaBuffer::from_bytes(encode_floats(&out, dtype)),
+    )
+}

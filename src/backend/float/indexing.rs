@@ -67,13 +67,13 @@ pub(super) fn float_gather(
 }
 
 pub(super) fn float_scatter(
-    _dim: usize,
+    dim: usize,
     tensor: GnaFloatTensorPrimitive,
-    _indices: GnaIntTensorPrimitive,
-    _value: GnaFloatTensorPrimitive,
-    _update: IndexingUpdateOp,
+    indices: GnaIntTensorPrimitive,
+    value: GnaFloatTensorPrimitive,
+    update: IndexingUpdateOp,
 ) -> GnaFloatTensorPrimitive {
-    tensor
+    layout::scatter_op_f32(dim, tensor, indices, value, update)
 }
 
 pub(super) fn float_select(
@@ -95,12 +95,12 @@ pub(super) fn float_select(
 
 pub(super) fn float_select_assign(
     tensor: GnaFloatTensorPrimitive,
-    _dim: usize,
-    _indices: GnaIntTensorPrimitive,
-    _value: GnaFloatTensorPrimitive,
-    _update: IndexingUpdateOp,
+    dim: usize,
+    indices: GnaIntTensorPrimitive,
+    value: GnaFloatTensorPrimitive,
+    update: IndexingUpdateOp,
 ) -> GnaFloatTensorPrimitive {
-    tensor
+    layout::select_assign_op_f32(tensor, dim, indices, value, update)
 }
 
 pub(super) fn float_slice(

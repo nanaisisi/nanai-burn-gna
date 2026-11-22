@@ -96,13 +96,13 @@ pub(super) fn int_gather(
 }
 
 pub(super) fn int_scatter(
-    _dim: usize,
+    dim: usize,
     tensor: GnaIntTensorPrimitive,
-    _indices: GnaIntTensorPrimitive,
-    _value: GnaIntTensorPrimitive,
-    _update: IndexingUpdateOp,
+    indices: GnaIntTensorPrimitive,
+    value: GnaIntTensorPrimitive,
+    update: IndexingUpdateOp,
 ) -> GnaIntTensorPrimitive {
-    tensor
+    layout::scatter_op_i64(dim, tensor, indices, value, update)
 }
 
 pub(super) fn int_select(
@@ -124,12 +124,12 @@ pub(super) fn int_select(
 
 pub(super) fn int_select_assign(
     tensor: GnaIntTensorPrimitive,
-    _dim: usize,
-    _indices: GnaIntTensorPrimitive,
-    _value: GnaIntTensorPrimitive,
-    _update: IndexingUpdateOp,
+    dim: usize,
+    indices: GnaIntTensorPrimitive,
+    value: GnaIntTensorPrimitive,
+    update: IndexingUpdateOp,
 ) -> GnaIntTensorPrimitive {
-    tensor
+    layout::select_assign_op_i64(tensor, dim, indices, value, update)
 }
 
 pub(super) fn int_swap_dims(

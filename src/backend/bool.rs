@@ -83,66 +83,115 @@ impl BoolTensorOps<Self> for GnaBackend {
         tensor.with_shape(shape)
     }
 
-    fn bool_slice(tensor: GnaBoolTensorPrimitive, _slices: &[Slice]) -> GnaBoolTensorPrimitive {
-        tensor
+    fn bool_slice(tensor: GnaBoolTensorPrimitive, slices: &[Slice]) -> GnaBoolTensorPrimitive {
+        use burn_backend::TensorMetadata;
+        let (shape, bytes) = super::gna_exec::layout::slice_bytes(
+            tensor.buffer().as_slice(),
+            &tensor.shape(),
+            slices,
+            1,
+        );
+        GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
     }
 
     fn bool_slice_assign(
         tensor: GnaBoolTensorPrimitive,
-        _slices: &[Slice],
-        _value: GnaBoolTensorPrimitive,
+        slices: &[Slice],
+        value: GnaBoolTensorPrimitive,
     ) -> GnaBoolTensorPrimitive {
-        tensor
+        use burn_backend::TensorMetadata;
+        let bytes = super::gna_exec::layout::slice_assign_bytes(
+            tensor.buffer().as_slice(),
+            &tensor.shape(),
+            slices,
+            value.buffer().as_slice(),
+            1,
+        );
+        GnaBoolTensorPrimitive::new(tensor.shape(), GnaBuffer::from_bytes(bytes))
     }
 
     fn bool_mask_where(
         tensor: GnaBoolTensorPrimitive,
-        _mask: GnaBoolTensorPrimitive,
-        _value: GnaBoolTensorPrimitive,
+        mask: GnaBoolTensorPrimitive,
+        value: GnaBoolTensorPrimitive,
     ) -> GnaBoolTensorPrimitive {
-        tensor
+        use burn_backend::TensorMetadata;
+        let bytes = super::gna_exec::layout::mask_where_bytes(
+            tensor.buffer().as_slice(),
+            mask.buffer().as_slice(),
+            value.buffer().as_slice(),
+            1,
+        );
+        GnaBoolTensorPrimitive::new(tensor.shape(), GnaBuffer::from_bytes(bytes))
     }
 
     fn bool_mask_fill(
         tensor: GnaBoolTensorPrimitive,
-        _mask: GnaBoolTensorPrimitive,
-        _value: Scalar,
+        mask: GnaBoolTensorPrimitive,
+        value: Scalar,
     ) -> GnaBoolTensorPrimitive {
-        tensor
+        use burn_backend::TensorMetadata;
+        let fill = [u8::from(value.elem::<bool>())];
+        let bytes = super::gna_exec::layout::mask_fill_bytes(
+            tensor.buffer().as_slice(),
+            mask.buffer().as_slice(),
+            &fill,
+            1,
+        );
+        GnaBoolTensorPrimitive::new(tensor.shape(), GnaBuffer::from_bytes(bytes))
     }
 
     fn bool_gather(
-        _dim: usize,
+        dim: usize,
         tensor: GnaBoolTensorPrimitive,
-        _indices: GnaIntTensorPrimitive,
+        indices: GnaIntTensorPrimitive,
     ) -> GnaBoolTensorPrimitive {
-        tensor
+        use burn_backend::TensorMetadata;
+        let idx_vals = super::gna_exec::decode_ints(indices.buffer().as_slice(), indices.dtype());
+        let (shape, bytes) = super::gna_exec::layout::gather_bytes(
+            dim,
+            tensor.buffer().as_slice(),
+            &tensor.shape(),
+            &idx_vals,
+            &indices.shape(),
+            1,
+        );
+        GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
     }
 
     fn bool_scatter_or(
-        _dim: usize,
+        dim: usize,
         tensor: GnaBoolTensorPrimitive,
-        _indices: GnaIntTensorPrimitive,
-        _value: GnaBoolTensorPrimitive,
+        indices: GnaIntTensorPrimitive,
+        value: GnaBoolTensorPrimitive,
     ) -> GnaBoolTensorPrimitive {
-        tensor
+        super::gna_exec::layout::scatter_or_bool(dim, tensor, indices, value)
     }
 
     fn bool_select(
         tensor: GnaBoolTensorPrimitive,
-        _dim: usize,
-        _indices: GnaIntTensorPrimitive,
+        dim: usize,
+        indices: GnaIntTensorPrimitive,
     ) -> GnaBoolTensorPrimitive {
-        tensor
+        use burn_backend::TensorMetadata;
+        let idx_vals = super::gna_exec::decode_ints(indices.buffer().as_slice(), indices.dtype());
+        let (shape, bytes) = super::gna_exec::layout::select_bytes(
+            tensor.buffer().as_slice(),
+            &tensor.shape(),
+            dim,
+            &idx_vals,
+            1,
+        );
+        GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
     }
 
     fn bool_select_or(
         tensor: GnaBoolTensorPrimitive,
-        _dim: usize,
-        _indices: GnaIntTensorPrimitive,
-        _value: GnaBoolTensorPrimitive,
+        dim: usize,
+        indices: GnaIntTensorPrimitive,
+        value: GnaBoolTensorPrimitive,
     ) -> GnaBoolTensorPrimitive {
-        tensor
+        super::gna_exec::layout::select_or_bool(tensor, dim, indices, value)
     }
 
     fn bool_equal(
@@ -261,10 +310,17 @@ impl BoolTensorOps<Self> for GnaBackend {
 
     fn bool_unfold(
         tensor: GnaBoolTensorPrimitive,
-        _dim: usize,
-        _size: usize,
-        _step: usize,
+        dim: usize,
+        size: usize,
+        step: usize,
     ) -> GnaBoolTensorPrimitive {
-        tensor
+        use burn_backend::TensorMetadata;
+        let (shape, bytes) = super::gna_exec::layout::unfold_bytes(
+            tensor.buffer().as_slice(),
+            &tensor.shape(),
+            super::UnfoldParams::new(dim, size, step),
+            1,
+        );
+        GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(bytes))
     }
 }

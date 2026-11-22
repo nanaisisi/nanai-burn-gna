@@ -437,3 +437,175 @@ pub fn unfold_bytes(
     }
     (Shape::from(out_dims), out)
 }
+
+fn apply_update_f32(dst: &mut f32, val: f32, op: burn_backend::tensor::IndexingUpdateOp) {
+    use burn_backend::tensor::IndexingUpdateOp;
+    match op {
+        IndexingUpdateOp::Assign => *dst = val,
+        IndexingUpdateOp::Add => *dst += val,
+        IndexingUpdateOp::Mul => *dst *= val,
+        IndexingUpdateOp::Min => *dst = dst.min(val),
+        IndexingUpdateOp::Max => *dst = dst.max(val),
+    }
+}
+
+fn apply_update_i64(dst: &mut i64, val: i64, op: burn_backend::tensor::IndexingUpdateOp) {
+    use burn_backend::tensor::IndexingUpdateOp;
+    match op {
+        IndexingUpdateOp::Assign => *dst = val,
+        IndexingUpdateOp::Add => *dst = dst.wrapping_add(val),
+        IndexingUpdateOp::Mul => *dst = dst.wrapping_mul(val),
+        IndexingUpdateOp::Min => *dst = (*dst).min(val),
+        IndexingUpdateOp::Max => *dst = (*dst).max(val),
+    }
+}
+
+pub fn scatter_op_f32(
+    dim: usize,
+    tensor: GnaFloatTensorPrimitive,
+    indices: GnaIntTensorPrimitive,
+    value: GnaFloatTensorPrimitive,
+    update: burn_backend::tensor::IndexingUpdateOp,
+) -> GnaFloatTensorPrimitive {
+    let shape = tensor.shape();
+    let dtype = tensor.dtype();
+    let mut out = decode_floats(tensor.buffer().as_slice(), dtype);
+    let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
+    let val_vals = decode_floats(value.buffer().as_slice(), value.dtype());
+    let out_strides = compute_strides(&shape);
+    let idx_shape = indices.shape();
+    for i in 0..idx_vals.len() {
+        let mut coords = linear_to_coords(i, &idx_shape);
+        coords[dim] = idx_vals[i] as usize;
+        let dst_idx = coords_to_linear(&coords, &out_strides);
+        apply_update_f32(&mut out[dst_idx], val_vals[i], update);
+    }
+    GnaFloatTensorPrimitive::new(
+        shape,
+        dtype,
+        GnaBuffer::from_bytes(encode_floats(&out, dtype)),
+    )
+}
+
+pub fn scatter_op_i64(
+    dim: usize,
+    tensor: GnaIntTensorPrimitive,
+    indices: GnaIntTensorPrimitive,
+    value: GnaIntTensorPrimitive,
+    update: burn_backend::tensor::IndexingUpdateOp,
+) -> GnaIntTensorPrimitive {
+    let shape = tensor.shape();
+    let dtype = tensor.dtype();
+    let mut out = decode_ints(tensor.buffer().as_slice(), dtype);
+    let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
+    let val_vals = decode_ints(value.buffer().as_slice(), value.dtype());
+    let out_strides = compute_strides(&shape);
+    let idx_shape = indices.shape();
+    for i in 0..idx_vals.len() {
+        let mut coords = linear_to_coords(i, &idx_shape);
+        coords[dim] = idx_vals[i] as usize;
+        let dst_idx = coords_to_linear(&coords, &out_strides);
+        apply_update_i64(&mut out[dst_idx], val_vals[i], update);
+    }
+    GnaIntTensorPrimitive::new(
+        shape,
+        dtype,
+        GnaBuffer::from_bytes(encode_ints(&out, dtype)),
+    )
+}
+
+pub fn scatter_or_bool(
+    dim: usize,
+    tensor: GnaBoolTensorPrimitive,
+    indices: GnaIntTensorPrimitive,
+    value: GnaBoolTensorPrimitive,
+) -> GnaBoolTensorPrimitive {
+    let shape = tensor.shape();
+    let mut out = tensor.buffer().to_vec();
+    let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
+    let val_bytes = value.buffer().as_slice();
+    let out_strides = compute_strides(&shape);
+    let idx_shape = indices.shape();
+    for i in 0..idx_vals.len() {
+        let mut coords = linear_to_coords(i, &idx_shape);
+        coords[dim] = idx_vals[i] as usize;
+        let dst_idx = coords_to_linear(&coords, &out_strides);
+        out[dst_idx] = u8::from(out[dst_idx] != 0 || val_bytes[i] != 0);
+    }
+    GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(out))
+}
+
+pub fn select_assign_op_f32(
+    tensor: GnaFloatTensorPrimitive,
+    dim: usize,
+    indices: GnaIntTensorPrimitive,
+    value: GnaFloatTensorPrimitive,
+    update: burn_backend::tensor::IndexingUpdateOp,
+) -> GnaFloatTensorPrimitive {
+    let shape = tensor.shape();
+    let dtype = tensor.dtype();
+    let mut out = decode_floats(tensor.buffer().as_slice(), dtype);
+    let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
+    let val_vals = decode_floats(value.buffer().as_slice(), value.dtype());
+    let out_strides = compute_strides(&shape);
+    let val_shape = value.shape();
+    for (i, &val) in val_vals.iter().enumerate() {
+        let mut coords = linear_to_coords(i, &val_shape);
+        coords[dim] = idx_vals[coords[dim]] as usize;
+        let dst_idx = coords_to_linear(&coords, &out_strides);
+        apply_update_f32(&mut out[dst_idx], val, update);
+    }
+    GnaFloatTensorPrimitive::new(
+        shape,
+        dtype,
+        GnaBuffer::from_bytes(encode_floats(&out, dtype)),
+    )
+}
+
+pub fn select_assign_op_i64(
+    tensor: GnaIntTensorPrimitive,
+    dim: usize,
+    indices: GnaIntTensorPrimitive,
+    value: GnaIntTensorPrimitive,
+    update: burn_backend::tensor::IndexingUpdateOp,
+) -> GnaIntTensorPrimitive {
+    let shape = tensor.shape();
+    let dtype = tensor.dtype();
+    let mut out = decode_ints(tensor.buffer().as_slice(), dtype);
+    let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
+    let val_vals = decode_ints(value.buffer().as_slice(), value.dtype());
+    let out_strides = compute_strides(&shape);
+    let val_shape = value.shape();
+    for (i, &val) in val_vals.iter().enumerate() {
+        let mut coords = linear_to_coords(i, &val_shape);
+        coords[dim] = idx_vals[coords[dim]] as usize;
+        let dst_idx = coords_to_linear(&coords, &out_strides);
+        apply_update_i64(&mut out[dst_idx], val, update);
+    }
+    GnaIntTensorPrimitive::new(
+        shape,
+        dtype,
+        GnaBuffer::from_bytes(encode_ints(&out, dtype)),
+    )
+}
+
+pub fn select_or_bool(
+    tensor: GnaBoolTensorPrimitive,
+    dim: usize,
+    indices: GnaIntTensorPrimitive,
+    value: GnaBoolTensorPrimitive,
+) -> GnaBoolTensorPrimitive {
+    let shape = tensor.shape();
+    let mut out = tensor.buffer().to_vec();
+    let idx_vals = decode_ints(indices.buffer().as_slice(), indices.dtype());
+    let val_bytes = value.buffer().as_slice();
+    let out_strides = compute_strides(&shape);
+    let val_shape = value.shape();
+    for (i, &vb) in val_bytes.iter().enumerate() {
+        let mut coords = linear_to_coords(i, &val_shape);
+        coords[dim] = idx_vals[coords[dim]] as usize;
+        let dst_idx = coords_to_linear(&coords, &out_strides);
+        out[dst_idx] = u8::from(out[dst_idx] != 0 || vb != 0);
+    }
+    GnaBoolTensorPrimitive::new(shape, GnaBuffer::from_bytes(out))
+}

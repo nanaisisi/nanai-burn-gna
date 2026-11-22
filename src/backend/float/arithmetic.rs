@@ -80,10 +80,10 @@ pub(super) fn float_matmul(
 
 pub(super) fn float_cross(
     lhs: GnaFloatTensorPrimitive,
-    _rhs: GnaFloatTensorPrimitive,
-    _dim: usize,
+    rhs: GnaFloatTensorPrimitive,
+    dim: usize,
 ) -> GnaFloatTensorPrimitive {
-    lhs
+    crate::backend::gna_exec::extra::execute_float_cross(lhs, rhs, dim)
 }
 
 pub(super) fn float_recip(tensor: GnaFloatTensorPrimitive) -> GnaFloatTensorPrimitive {
