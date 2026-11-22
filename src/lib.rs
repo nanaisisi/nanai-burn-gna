@@ -71,8 +71,7 @@ mod tests {
     fn gna_int_matmul_execution() {
         let device = GnaDevice::default();
         let lhs = GnaBackend::int_from_data(TensorData::from([[1i32, 2, 3], [4, 5, 6]]), &device);
-        let rhs =
-            GnaBackend::int_from_data(TensorData::from([[7i32, 8], [9, 1], [2, 3]]), &device);
+        let rhs = GnaBackend::int_from_data(TensorData::from([[7i32, 8], [9, 1], [2, 3]]), &device);
 
         let out = GnaBackend::int_matmul(lhs, rhs);
         assert_eq!(out.shape().dims(), [2, 2]);
@@ -80,7 +79,10 @@ mod tests {
         let data = try_read_sync(GnaBackend::int_into_data(out))
             .expect("sync read")
             .expect("int_into_data");
-        assert_eq!(data.as_slice::<i32>().expect("slice i32"), &[31, 19, 85, 55]);
+        assert_eq!(
+            data.as_slice::<i32>().expect("slice i32"),
+            &[31, 19, 85, 55]
+        );
     }
 
     #[test]
@@ -104,10 +106,7 @@ mod tests {
         let slice = data.as_slice::<f32>().expect("slice f32");
         let expected = [31.0f32, 19.0, 85.0, 55.0];
         for (actual, exp) in slice.iter().zip(expected.iter()) {
-            assert!(
-                (actual - exp).abs() < 0.1,
-                "expected {exp}, got {actual}"
-            );
+            assert!((actual - exp).abs() < 0.1, "expected {exp}, got {actual}");
         }
     }
 }
